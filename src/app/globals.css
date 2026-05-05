@@ -1,0 +1,27 @@
+/* FILE: src/app/globals.css — Global Styles
+ * VERSION: T0-v1 — Initial styles for T0 setup
+ * LAST MODIFIED: 2026-05-05
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --dime-primary: #1a1a2e;
+  --dime-accent: #e94560;
+  --dime-gold: #f5c518;
+  --dime-cyan: #00d4ff;
+  --dime-bg: #0d0d1a;
+}
+
+html,
+body {
+  background: var(--dime-bg);
+  color: #fff;
+  min-height: 100vh;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
