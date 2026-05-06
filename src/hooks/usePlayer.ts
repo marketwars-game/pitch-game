@@ -2,7 +2,7 @@
 // FILE: src/hooks/usePlayer.ts
 // PROJECT: pitch-game
 // TASK: T1 — Player View + Realtime
-// VERSION: T1-v1
+// VERSION: T1-v3
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: จัดการ player session — localStorage persistence + join action
@@ -10,6 +10,9 @@
 //          join(nickname) → INSERT players row + เซฟลง localStorage
 //
 // CHANGE LOG:
+//   T1-v3 (2026-05-06): Revert v2 cast — typed client (T1-v3) ทำให้ data จาก insert
+//                        เป็น PlayerRow โดยตรง ไม่ต้อง cast
+//   T1-v2 (2026-05-06): [reverted] Cast insert result เป็น PlayerRow (untyped client)
 //   T1-v1 (2026-05-06): Initial — load/join/clear flow ผ่าน localStorage
 // =====================================================
 'use client';

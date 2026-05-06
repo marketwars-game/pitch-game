@@ -1,8 +1,20 @@
-// FILE: src/lib/supabase.ts — Supabase Client
-// VERSION: T0-v1 — Initial client for T0 setup
-// LAST MODIFIED: 2026-05-05
-// HISTORY:
-//   T0-v1: Initial — browser + server clients
+// =====================================================
+// FILE: src/lib/supabase.ts
+// PROJECT: pitch-game
+// TASK: T1 — Player View + Realtime
+// VERSION: T1-v3
+// CREATED: 2026-05-05
+// LAST MODIFIED: 2026-05-06
+// PURPOSE: Supabase clients (browser + server) — typed ผ่าน Database interface
+//          Type safety เต็มที่: .insert/.update/.select() autocomplete + type check
+//
+// CHANGE LOG:
+//   T1-v3 (2026-05-06): Revert กลับเป็น createClient<Database>() (typed client)
+//                        ตอนนี้ type-safe เต็ม เพราะ Database interface ใน types.ts
+//                        มี Views/Functions/Enums/CompositeTypes ครบ (T1-v2 fix)
+//   T1-v2 (2026-05-06): [reverted] เปลี่ยนเป็น untyped client เพื่อแก้ never inference
+//   T0-v1 (2026-05-05): Initial — typed clients
+// =====================================================
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';

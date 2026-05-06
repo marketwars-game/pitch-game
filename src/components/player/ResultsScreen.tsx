@@ -2,7 +2,7 @@
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
 // TASK: T1 — Player View + Realtime
-// VERSION: T1-v1
+// VERSION: T1-v2
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
@@ -11,6 +11,9 @@
 //          คำนวณ rank โดย subscribe submissions ทั้งหมดในเกม
 //
 // CHANGE LOG:
+//   T1-v2 (2026-05-06): Fix TypeScript build error — useRank() select('id, scores')
+//                        infer เป็น 'never' บน typed client
+//                        Cast result เป็น Pick<SubmissionRow, 'id' | 'scores'>[]
 //   T1-v1 (2026-05-06): Initial — vibrant gradient bg, sparkles, gradient score,
 //                        rank คำนวณจาก submissions ทั้งหมด
 // =====================================================
@@ -415,18 +418,22 @@ function useRank(gameId: string, mySubmissionId: string | null) {
 
       if (cancelled || error || !data) return;
 
-      const withScore = data
+      // Cast เป็น row type ที่ select มา (id + scores) เพื่อให้ TypeScript รู้จัก fields
+      type RankRow = Pick<SubmissionRow, 'id' | 'scores'>;
+      const rows = data as unknown as RankRow[];
+
+      const withScore = rows
         .map((row) => ({
-          id: row.id as string,
-          finalScore: computeFinalScore((row.scores as SubmissionScores) ?? null),
+          id: row.id,
+          finalScore: computeFinalScore(row.scores ?? null),
         }))
-        .filter((r) => r.finalScore !== null) as { id: string; finalScore: number }[];
+        .filter((r): r is { id: string; finalScore: number } => r.finalScore !== null);
 
       withScore.sort((a, b) => b.finalScore - a.finalScore);
 
       const myIndex = withScore.findIndex((r) => r.id === mySubmissionId);
       setRank(myIndex >= 0 ? myIndex + 1 : null);
-      setTotal(data.length);
+      setTotal(rows.length);
     };
 
     compute();

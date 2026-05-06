@@ -2,12 +2,15 @@
 // FILE: src/lib/types.ts
 // PROJECT: pitch-game
 // TASK: T1 — Player View + Realtime
-// VERSION: T1-v1
+// VERSION: T1-v2
 // CREATED: 2026-05-05
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Database & domain types — share กันระหว่าง client + server
 //
 // CHANGE LOG:
+//   T1-v2 (2026-05-06): เพิ่ม Views/Functions/Enums/CompositeTypes ใน Database interface
+//                        แก้ปัญหา Supabase v2.105+ infer Insert/Update เป็น never
+//                        (Supabase v2.40+ enforce schema ครบทุก namespace)
 //   T1-v1 (2026-05-06): เพิ่ม pitchMinLength + pitchMaxLength ใน GameConfig
 //                        เพื่อให้ปรับค่า validation ของ textarea ได้
 //   T0-v1 (2026-05-05): Initial — types สำหรับ games, players, submissions
@@ -114,6 +117,8 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
 
 // =====================================================
 // Supabase Database Type (สำหรับ typed client)
+// Schema ต้องครบทุก namespace (Tables/Views/Functions/Enums/CompositeTypes)
+// ไม่งั้น Supabase v2.40+ จะ infer Insert/Update/partial Select เป็น never
 // =====================================================
 export interface Database {
   public: {
@@ -122,6 +127,7 @@ export interface Database {
         Row: GameRow;
         Insert: Partial<GameRow> & { id?: string };
         Update: Partial<GameRow>;
+        Relationships: [];
       };
       players: {
         Row: PlayerRow;
@@ -130,6 +136,15 @@ export interface Database {
           joined_at?: string;
         };
         Update: Partial<PlayerRow>;
+        Relationships: [
+          {
+            foreignKeyName: 'players_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'games';
+            referencedColumns: ['id'];
+          }
+        ];
       };
       submissions: {
         Row: SubmissionRow;
@@ -140,7 +155,35 @@ export interface Database {
           scores?: SubmissionScores | null;
         };
         Update: Partial<SubmissionRow>;
+        Relationships: [
+          {
+            foreignKeyName: 'submissions_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'games';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'submissions_player_id_fkey';
+            columns: ['player_id'];
+            isOneToOne: false;
+            referencedRelation: 'players';
+            referencedColumns: ['id'];
+          }
+        ];
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }

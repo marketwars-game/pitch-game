@@ -2,13 +2,17 @@
 // FILE: src/hooks/useSubmission.ts
 // PROJECT: pitch-game
 // TASK: T1 — Player View + Realtime
-// VERSION: T1-v1
+// VERSION: T1-v3
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Track submission row ของ player ปัจจุบัน + realtime score updates
 //          ให้ submit() action และ expose submission state (รวม scores ตอนพร้อม)
 //
 // CHANGE LOG:
+//   T1-v3 (2026-05-06): Sync version กับ typed client revert (supabase.ts T1-v3)
+//                        Logic เดิมยังใช้ได้ — cast ที่ใช้อยู่เป็น defensive type narrowing
+//                        ซึ่ง work ทั้ง typed + untyped client
+//   T1-v2 (2026-05-06): [reverted] Version bump (untyped client compat)
 //   T1-v1 (2026-05-06): Initial — fetch + subscribe + submit + autoSubmit
 // =====================================================
 'use client';
