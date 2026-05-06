@@ -1,20 +1,26 @@
 // =====================================================
 // FILE: src/components/admin/PlayerDetailModal.tsx
 // PROJECT: pitch-game
-// TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v1
+// TASK: T3 — AI Judge API
+// VERSION: T3-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Modal — show full pitch + 3 judge scores + comments
 //          Used on stage during Top 3 reveal
 //          Auto-defaulted banner shown when admin should know AI failed
 //
+//          T3-v1: เพิ่มปุ่ม "ลองตัดสินใหม่" สำหรับ failed submissions
+//                 - แสดงเฉพาะเมื่อ judging_status='failed' (ก่อน admin reveal)
+//                 - กดแล้วยิง POST /api/judge → server ลอง judge ใหม่
+//                 - state: idle | running | success | error
+//
 // CHANGE LOG:
+//   T3-v1 (2026-05-06): เพิ่ม Re-judge button (failed submissions only)
 //   T2-v1 (2026-05-06): Initial
 // =====================================================
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type {
   JudgeScore,
   PlayerStatusEnriched,
@@ -27,6 +33,8 @@ export interface PlayerDetailModalProps {
   onClose: () => void;
 }
 
+type RejudgeState = 'idle' | 'running' | 'success' | 'error';
+
 export function PlayerDetailModal({
   enriched,
   stockTicker,
@@ -37,6 +45,10 @@ export function PlayerDetailModal({
   const scores = submission?.scores ?? null;
   const finalScore = scores?.finalScore;
 
+  // T3-v1: Re-judge state
+  const [rejudgeState, setRejudgeState] = useState<RejudgeState>('idle');
+  const [rejudgeError, setRejudgeError] = useState<string | null>(null);
+
   // ESC key closes
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -45,6 +57,41 @@ export function PlayerDetailModal({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
+
+  // T3-v1: Re-judge handler
+  const handleRejudge = async () => {
+    if (!submission || rejudgeState === 'running') return;
+    setRejudgeState('running');
+    setRejudgeError(null);
+    try {
+      const res = await fetch('/api/judge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId: submission.id }),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => '(no body)');
+        throw new Error(`/api/judge ${res.status}: ${text}`);
+      }
+      const data = await res.json();
+      if (data.status === 'failed') {
+        setRejudgeState('error');
+        setRejudgeError('AI ยังตัดสินไม่สำเร็จ — ลองอีกครั้ง');
+      } else {
+        setRejudgeState('success');
+        // Realtime subscription จะ pick up scores อัตโนมัติ
+      }
+    } catch (err) {
+      setRejudgeState('error');
+      setRejudgeError(err instanceof Error ? err.message : 'Unknown error');
+    }
+  };
+
+  // T3-v1: แสดงปุ่ม Re-judge เฉพาะเมื่อ failed (และยังไม่ done/auto_defaulted)
+  const showRejudgeButton =
+    submission &&
+    submission.judging_status === 'failed' &&
+    !submission.auto_defaulted;
 
   return (
     <div
@@ -180,6 +227,90 @@ export function PlayerDetailModal({
               >
                 Admin-only
               </span>
+            </div>
+          )}
+
+          {/* T3-v1: Failed banner + Re-judge button */}
+          {showRejudgeButton && (
+            <div
+              style={{
+                background: 'rgba(255,140,66,0.12)',
+                border: '1px solid #FF8C42',
+                borderRadius: 10,
+                padding: '12px 14px',
+                marginBottom: 18,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  marginBottom: 10,
+                }}
+              >
+                <div style={{ fontSize: 16, flexShrink: 0 }}>⚠️</div>
+                <div style={{ lineHeight: 1.5, flex: 1 }}>
+                  <strong
+                    style={{
+                      color: '#FF8C42',
+                      display: 'block',
+                      fontWeight: 800,
+                      marginBottom: 2,
+                      fontSize: 12,
+                    }}
+                  >
+                    AI ตัดสินไม่สำเร็จ
+                  </strong>
+                  <span style={{ fontSize: 12, color: '#FFCBA8' }}>
+                    ลองตัดสินใหม่ก่อนใช้ auto-default
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleRejudge}
+                disabled={rejudgeState === 'running' || rejudgeState === 'success'}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  background:
+                    rejudgeState === 'success'
+                      ? 'rgba(93,245,145,0.15)'
+                      : '#FF8C42',
+                  color:
+                    rejudgeState === 'success' ? '#5DF591' : '#1c1c1e',
+                  border:
+                    rejudgeState === 'success'
+                      ? '1px solid #5DF591'
+                      : 'none',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor:
+                    rejudgeState === 'running' || rejudgeState === 'success'
+                      ? 'not-allowed'
+                      : 'pointer',
+                  fontFamily: 'inherit',
+                  opacity: rejudgeState === 'running' ? 0.6 : 1,
+                }}
+              >
+                {rejudgeState === 'running' && '⏳ กำลังตัดสิน...'}
+                {rejudgeState === 'success' && '✓ ตัดสินสำเร็จ'}
+                {rejudgeState === 'error' && '↻ ลองอีกครั้ง'}
+                {rejudgeState === 'idle' && '↻ ลองตัดสินใหม่'}
+              </button>
+              {rejudgeError && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontSize: 11,
+                    color: '#FF5C8A',
+                    fontWeight: 600,
+                  }}
+                >
+                  {rejudgeError}
+                </div>
+              )}
             </div>
           )}
 

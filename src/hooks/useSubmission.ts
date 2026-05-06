@@ -1,17 +1,22 @@
 // =====================================================
 // FILE: src/hooks/useSubmission.ts
 // PROJECT: pitch-game
-// TASK: T1 — Player View + Realtime
-// VERSION: T1-v3
+// TASK: T3 — AI Judge API
+// VERSION: T3-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Track submission row ของ player ปัจจุบัน + realtime score updates
 //          ให้ submit() action และ expose submission state (รวม scores ตอนพร้อม)
 //
+//          T3-v1: หลัง INSERT submission สำเร็จ → fire-and-forget POST /api/judge
+//          ฝั่ง server จะยิง 3 personas parallel + UPDATE scores
+//          Realtime subscribe เดิม (UPDATE) จะ pick up scores เมื่อ admin reveal
+//
 // CHANGE LOG:
+//   T3-v1 (2026-05-06): หลัง INSERT submission → fetch POST /api/judge (fire-and-forget)
+//                        Player UI ไม่ block — server ทำงาน background
+//                        Error ใน fetch judge ไม่ทำให้ submit fail (DB row ผ่านไปแล้ว)
 //   T1-v3 (2026-05-06): Sync version กับ typed client revert (supabase.ts T1-v3)
-//                        Logic เดิมยังใช้ได้ — cast ที่ใช้อยู่เป็น defensive type narrowing
-//                        ซึ่ง work ทั้ง typed + untyped client
 //   T1-v2 (2026-05-06): [reverted] Version bump (untyped client compat)
 //   T1-v1 (2026-05-06): Initial — fetch + subscribe + submit + autoSubmit
 // =====================================================
@@ -36,8 +41,8 @@ export interface UseSubmissionResult {
  * - mount: fetch submission row ที่มีอยู่ (ถ้าเคย submit ไปแล้ว)
  * - subscribe INSERT/UPDATE บน submissions filter โดย player_id
  *   (ครอบคลุม: INSERT ของตัวเองหลัง submit + UPDATE scores จาก API route)
- * - submit(pitch): INSERT พร้อม auto_submitted=false
- * - autoSubmit(pitch): INSERT พร้อม auto_submitted=true (เรียกตอน countdown หมด)
+ * - submit(pitch): INSERT พร้อม auto_submitted=false + trigger /api/judge
+ * - autoSubmit(pitch): INSERT พร้อม auto_submitted=true + trigger /api/judge
  *
  * submit/autoSubmit เป็น no-op ถ้ามี submission อยู่แล้ว
  * Return true ถ้า success (หรือ submit ไปแล้ว), false ถ้า error
@@ -85,7 +90,7 @@ export function useSubmission(
       .on(
         'postgres_changes',
         {
-          event: '*',  // INSERT (submit ของตัวเอง) + UPDATE (scores จาก API)
+          event: '*', // INSERT (submit ของตัวเอง) + UPDATE (scores จาก API)
           schema: 'public',
           table: 'submissions',
           filter: `player_id=eq.${playerId}`,
@@ -144,8 +149,19 @@ export function useSubmission(
           return false;
         }
 
-        setSubmission(data as SubmissionRow);
+        const newSubmission = data as SubmissionRow;
+        setSubmission(newSubmission);
         setSubmitting(false);
+
+        // T3-v1: fire-and-forget /api/judge
+        // - ไม่ await — Player UI ไม่ block
+        // - error ใน judge call ไม่ทำให้ submit fail (DB row INSERT ผ่านแล้ว)
+        // - server จะ UPDATE scores → realtime subscribe จะ pick up
+        triggerJudge(newSubmission.id).catch((err) => {
+          console.error('[useSubmission] judge trigger failed:', err);
+          // ไม่ surface error — admin Re-judge button จะเป็น recovery path
+        });
+
         return true;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'ส่ง pitch ไม่สำเร็จ');
@@ -160,4 +176,21 @@ export function useSubmission(
   const autoSubmit = useCallback((pitch: string) => doInsert(pitch, true), [doInsert]);
 
   return { submission, loading, submitting, error, submit, autoSubmit };
+}
+
+// =====================================================
+// Helper: trigger /api/judge (fire-and-forget)
+// =====================================================
+async function triggerJudge(submissionId: string): Promise<void> {
+  const response = await fetch('/api/judge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ submissionId }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '(no body)');
+    throw new Error(`/api/judge returned ${response.status}: ${text}`);
+  }
+  // Don't need to read response — UPDATE scores มาจาก realtime subscribe แทน
 }
