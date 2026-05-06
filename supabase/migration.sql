@@ -1,7 +1,17 @@
 -- =====================================================
--- FILE: supabase/migration.sql — Pitch Game DB Schema
--- VERSION: T0-v1 — Initial schema for T0 setup
--- LAST MODIFIED: 2026-05-05
+-- FILE: supabase/migration.sql
+-- PROJECT: pitch-game
+-- TASK: T1 — Player View + Realtime
+-- VERSION: T1-v1
+-- CREATED: 2026-05-05
+-- LAST MODIFIED: 2026-05-06
+-- PURPOSE: DB schema (3 tables) + RLS + realtime + seed game row
+--          Re-run safe (idempotent) — มี on conflict + UPDATE สำหรับ seed
+--
+-- CHANGE LOG:
+--   T1-v1 (2026-05-06): เพิ่ม pitchMinLength=50 + pitchMaxLength=1500 ใน seed config
+--                        เพิ่ม UPDATE block เพื่อ refresh seed config ที่มีอยู่ (re-run safe)
+--   T0-v1 (2026-05-05): Initial schema
 -- =====================================================
 -- วิธีใช้:
 -- 1. เปิด Supabase Dashboard → Project ของคุณ
@@ -9,9 +19,11 @@
 -- 3. กด "New query"
 -- 4. Paste ทั้งหมดของไฟล์นี้
 -- 5. กด "Run"
+--
+-- หมายเหตุ T1-v1: ถ้า run ซ้ำ จะ update config ของ seed game ให้มี
+-- pitchMinLength + pitchMaxLength โดยอัตโนมัติ (ไม่ต้องลบ row เก่า)
 -- =====================================================
 
--- เปิด extension uuid (Supabase เปิดให้แล้วโดยปริยาย แต่กันลืม)
 create extension if not exists "uuid-ossp";
 
 -- =====================================================
@@ -67,9 +79,6 @@ alter table public.games enable row level security;
 alter table public.players enable row level security;
 alter table public.submissions enable row level security;
 
--- Policies: anon + authenticated สามารถ read/write ได้ทั้งหมด
--- (เนื่องจากเป็น event app ไม่มี multi-tenant)
-
 drop policy if exists "games_all_anon" on public.games;
 create policy "games_all_anon" on public.games
   for all to anon, authenticated
@@ -87,14 +96,27 @@ create policy "submissions_all_anon" on public.submissions
 
 -- =====================================================
 -- Enable Realtime on all 3 tables
+-- (idempotent — ถ้ามีอยู่แล้ว throw แต่ไม่กระทบ data)
 -- =====================================================
-alter publication supabase_realtime add table public.games;
-alter publication supabase_realtime add table public.players;
-alter publication supabase_realtime add table public.submissions;
+do $$
+begin
+  begin
+    alter publication supabase_realtime add table public.games;
+  exception when duplicate_object then null;
+  end;
+  begin
+    alter publication supabase_realtime add table public.players;
+  exception when duplicate_object then null;
+  end;
+  begin
+    alter publication supabase_realtime add table public.submissions;
+  exception when duplicate_object then null;
+  end;
+end $$;
 
 -- =====================================================
--- Seed: สร้าง 1 game record สำหรับ T1 testing
--- ใช้ fixed UUID เพื่อให้อ้างอิงได้จาก code
+-- Seed: สร้าง 1 game record สำหรับ testing
+-- ใช้ fixed UUID เพื่อให้อ้างอิงได้จาก code (DEFAULT_GAME_ID ใน types.ts)
 -- =====================================================
 insert into public.games (id, phase, stock, config)
 values (
@@ -116,16 +138,33 @@ values (
   ),
   jsonb_build_object(
     'writingTimeSeconds', 240,
-    'primaryColor', '#1a1a2e',
+    'pitchMinLength', 50,
+    'pitchMaxLength', 1500,
+    'primaryColor', '#5DF591',
     'logoUrl', null
   )
 )
 on conflict (id) do nothing;
 
 -- =====================================================
--- Done!
+-- Re-run safe: update config ให้มี pitchMinLength/pitchMaxLength
+-- (กรณี run T0-v1 ไปแล้ว seed เก่ายังไม่มี 2 fields นี้)
+-- =====================================================
+update public.games
+set config = coalesce(config, '{}'::jsonb)
+  || jsonb_build_object(
+       'writingTimeSeconds', coalesce((config->>'writingTimeSeconds')::int, 240),
+       'pitchMinLength',     coalesce((config->>'pitchMinLength')::int, 50),
+       'pitchMaxLength',     coalesce((config->>'pitchMaxLength')::int, 1500),
+       'primaryColor',       coalesce(config->>'primaryColor', '#5DF591'),
+       'logoUrl',            config->'logoUrl'
+     )
+where id = '00000000-0000-0000-0000-000000000001'::uuid;
+
+-- =====================================================
+-- เสร็จแล้ว!
 -- ตรวจสอบ:
--- 1. ไปที่ Table Editor → ควรเห็น 3 tables: games, players, submissions
--- 2. ควรเห็น 1 row ใน games table
--- 3. ไปที่ Database → Replication → ควรเห็น 3 tables เปิด realtime
+-- 1. Table Editor → ควรเห็น 3 tables: games, players, submissions
+-- 2. games table ควรมี 1 row, config มี writingTimeSeconds + pitchMinLength + pitchMaxLength
+-- 3. Database → Replication → ควรเห็น 3 tables เปิด realtime
 -- =====================================================
