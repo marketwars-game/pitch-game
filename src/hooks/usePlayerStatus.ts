@@ -2,7 +2,7 @@
 // FILE: src/hooks/usePlayerStatus.ts
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v1
+// VERSION: T2-v2
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Subscribe players + submissions tables filtered by round
@@ -10,7 +10,13 @@
 //          Used by Admin Panel Player List + JudgingProgress
 //
 // CHANGE LOG:
-//   T2-v1 (2026-05-06): Initial — dual subscription + enrichment
+//   T2-v2 (2026-05-06): Handle reset event + DELETE events
+//                        - Subscribe DELETE event ของ players + submissions
+//                        - Subscribe UPDATE event ของ games — ถ้า phase กลายเป็น LOBBY
+//                          → re-fetch ทุกอย่างใหม่ (bulletproof reset detection)
+//                        - Reason: Realtime DELETE events อาจไม่ส่ง row data ครบ
+//                          การ re-fetch หลัง reset ทำให้ state sync แน่นอน
+//   T2-v1 (2026-05-06): Initial — INSERT only subscriptions (incomplete)
 // =====================================================
 'use client';
 
@@ -34,6 +40,11 @@ export interface UsePlayerStatusResult {
 /**
  * Subscribe ทั้ง players + submissions tables
  * Filter by round_number, enrich แต่ละ player ด้วย submission state
+ *
+ * Reset handling (T2-v2):
+ * - DELETE events บน players + submissions → ลบออกจาก state
+ * - UPDATE event บน games — ถ้า phase = LOBBY (แสดงว่า admin เพิ่ง reset)
+ *   → re-fetch ทุกอย่างใหม่ (bulletproof — ไม่พึ่ง DELETE event ที่อาจไม่สมบูรณ์)
  */
 export function usePlayerStatus(
   gameId: string,
@@ -44,13 +55,19 @@ export function usePlayerStatus(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Bumping refetchKey forces re-running the fetch effect (used after reset)
+  const [refetchKey, setRefetchKey] = useState(0);
+
+  // ============================================================
+  // Fetch + subscribe players + submissions
+  // ============================================================
   useEffect(() => {
     if (!gameId) return;
 
     const supabase = getSupabaseBrowserClient();
     let cancelled = false;
 
-    // 1. Initial fetch — ทั้ง players + submissions ของ round นี้
+    // 1. Initial fetch
     Promise.all([
       supabase
         .from('players')
@@ -84,39 +101,51 @@ export function usePlayerStatus(
         setLoading(false);
       });
 
-    // 2. Subscribe players (INSERT only — players ไม่ค่อย UPDATE)
+    // 2. Subscribe players (INSERT + DELETE — players ไม่ค่อย UPDATE)
     const playersChannel = supabase
-      .channel(`admin-players:${gameId}:${roundNumber}`)
+      .channel(`admin-players:${gameId}:${roundNumber}:${refetchKey}`)
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // INSERT, UPDATE, DELETE
           schema: 'public',
           table: 'players',
           filter: `game_id=eq.${gameId}`,
         },
         (payload) => {
           if (cancelled) return;
-          const row = payload.new as PlayerRow;
-          // กรอง round_number ที่ตรงกัน (filter ใน Postgres ทำได้แค่ field เดียว)
-          if (row.round_number !== roundNumber) return;
-          setPlayers((prev) => {
-            if (prev.some((p) => p.id === row.id)) return prev;
-            return [...prev, row].sort((a, b) =>
-              a.joined_at.localeCompare(b.joined_at)
+          const eventType = payload.eventType;
+          if (eventType === 'INSERT') {
+            const row = payload.new as PlayerRow;
+            if (row.round_number !== roundNumber) return;
+            setPlayers((prev) => {
+              if (prev.some((p) => p.id === row.id)) return prev;
+              return [...prev, row].sort((a, b) =>
+                a.joined_at.localeCompare(b.joined_at)
+              );
+            });
+          } else if (eventType === 'DELETE') {
+            const oldRow = payload.old as Partial<PlayerRow>;
+            if (!oldRow.id) return;
+            setPlayers((prev) => prev.filter((p) => p.id !== oldRow.id));
+          } else if (eventType === 'UPDATE') {
+            const row = payload.new as PlayerRow;
+            if (row.round_number !== roundNumber) return;
+            setPlayers((prev) =>
+              prev.map((p) => (p.id === row.id ? row : p))
             );
-          });
+          }
         }
       )
       .subscribe();
 
-    // 3. Subscribe submissions (INSERT + UPDATE — judging status changes)
+    // 3. Subscribe submissions (INSERT + UPDATE + DELETE)
     const submissionsChannel = supabase
-      .channel(`admin-submissions:${gameId}:${roundNumber}`)
+      .channel(`admin-submissions:${gameId}:${roundNumber}:${refetchKey}`)
       .on(
         'postgres_changes',
         {
-          event: '*', // INSERT, UPDATE, DELETE
+          event: '*',
           schema: 'public',
           table: 'submissions',
           filter: `game_id=eq.${gameId}`,
@@ -139,6 +168,7 @@ export function usePlayerStatus(
             );
           } else if (eventType === 'DELETE') {
             const oldRow = payload.old as Partial<SubmissionRow>;
+            if (!oldRow.id) return;
             setSubmissions((prev) => prev.filter((s) => s.id !== oldRow.id));
           }
         }
@@ -150,7 +180,62 @@ export function usePlayerStatus(
       supabase.removeChannel(playersChannel);
       supabase.removeChannel(submissionsChannel);
     };
-  }, [gameId, roundNumber]);
+  }, [gameId, roundNumber, refetchKey]);
+
+  // ============================================================
+  // T2-v2: Re-fetch on phase=LOBBY transition (reset detection)
+  // bulletproof — ใช้ UPDATE event บน games ที่ทำงานแน่นอน
+  // ============================================================
+  useEffect(() => {
+    if (!gameId) return;
+
+    const supabase = getSupabaseBrowserClient();
+    let cancelled = false;
+    let prevPhase: string | null = null;
+
+    // Get current phase as baseline
+    supabase
+      .from('games')
+      .select('phase')
+      .eq('id', gameId)
+      .single()
+      .then(({ data }) => {
+        if (cancelled) return;
+        prevPhase = data?.phase ?? null;
+      });
+
+    const channel = supabase
+      .channel(`admin-game-reset:${gameId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'games',
+          filter: `id=eq.${gameId}`,
+        },
+        (payload) => {
+          if (cancelled) return;
+          const newPhase = (payload.new as { phase?: string })?.phase ?? null;
+          // Detect transition: any non-LOBBY → LOBBY (signal of reset)
+          if (newPhase === 'LOBBY' && prevPhase && prevPhase !== 'LOBBY') {
+            // Force re-fetch — clear stale players + submissions
+            setPlayers([]);
+            setSubmissions([]);
+            setRefetchKey((k) => k + 1);
+          }
+          if (newPhase) {
+            prevPhase = newPhase;
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [gameId]);
 
   // Compute enriched players + counts (memo)
   const { enrichedPlayers, counts } = useMemo(() => {
@@ -215,7 +300,6 @@ function computeStatus(submission: SubmissionRow | null): PlayerStatus {
     case 'failed':
       return 'failed';
     default:
-      // Exhaustive check — ถ้ามี status ใหม่ TypeScript จะเตือน
       return 'submitted';
   }
 }
