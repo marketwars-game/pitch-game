@@ -2,17 +2,24 @@
 // FILE: src/hooks/usePhaseControl.ts
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v1
+// VERSION: T2-v2
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Phase control actions for Admin Panel
 //          - startWriting: LOBBY → WRITING + set timestamps
 //          - closeWriting: WRITING → JUDGING + close timer
 //          - revealResults(autoDefaultIds): JUDGING → RESULTS + auto-default failed
-//          - startNextRound: RESULTS → LOBBY (round_number+1, reset)
+//          - startNextRound: RESULTS → LOBBY (FULL RESET — delete data)
 //          - applyStock: UPDATE games.stock (ใช้ตอน LOBBY)
 //
 // CHANGE LOG:
+//   T2-v2 (2026-05-06): Pivot to single-round model
+//                        - startNextRound() = FULL RESET (delete players + submissions)
+//                        - ไม่ +1 round_number อีก (อยู่ที่ 1 ตลอด)
+//                        - Player View จะ detect การ reset ผ่าน phase change → LOBBY
+//                          แล้วตรวจว่า player record ของตัวเองยังอยู่มั้ย
+//                        - Reason: stale localStorage + round mismatch ก่อให้เกิด FK errors
+//                          การลบทุกอย่างทำให้ state เริ่มจาก clean slate ทุกครั้ง
 //   T2-v1 (2026-05-06): Initial
 // =====================================================
 'use client';
@@ -78,7 +85,6 @@ export function usePhaseControl(game: GameRow | null): UsePhaseControlResult {
         const supabase = getSupabaseBrowserClient();
         const config: GameConfig = game.config ?? DEFAULT_GAME_CONFIG;
 
-        // คำนวณที่ client (ISO string) — ป้องกัน timezone drift
         const startedAt = new Date();
         const endsAt = new Date(
           startedAt.getTime() + config.writingTimeSeconds * 1000
@@ -107,7 +113,6 @@ export function usePhaseControl(game: GameRow | null): UsePhaseControlResult {
         if (!game) return;
         const supabase = getSupabaseBrowserClient();
 
-        // ปิดเวลาเขียนทันที — Player View จะ auto-submit pitch ที่ค้าง
         const { error: updateError } = await supabase
           .from('games')
           .update({
@@ -144,7 +149,7 @@ export function usePhaseControl(game: GameRow | null): UsePhaseControlResult {
           if (updateSubError) throw new Error(updateSubError.message);
         }
 
-        // 2. Update game phase → RESULTS (Player ทุกคน reveal พร้อมกัน)
+        // 2. Update game phase → RESULTS
         const { error: updateGameError } = await supabase
           .from('games')
           .update({ phase: 'RESULTS' })
@@ -156,7 +161,11 @@ export function usePhaseControl(game: GameRow | null): UsePhaseControlResult {
   );
 
   // ============================================================
-  // RESULTS → LOBBY (next round)
+  // RESULTS → LOBBY (FULL RESET — T2-v2)
+  // ============================================================
+  // ลบ submissions + players ของ game ทั้งหมด → กลับ LOBBY
+  // Player View จะ detect ผ่าน phase change → LOBBY → validate player record
+  // ถ้าไม่เจอ → clear localStorage → กลับหน้า "ใส่ชื่อเล่น"
   // ============================================================
   const startNextRound = useCallback(
     async () =>
@@ -164,12 +173,27 @@ export function usePhaseControl(game: GameRow | null): UsePhaseControlResult {
         if (!game) return;
         const supabase = getSupabaseBrowserClient();
 
-        // เพิ่ม round_number + reset state (ไม่ลบ data รอบเก่า)
+        // 1. ลบ submissions ของ game นี้ (ลบก่อน เพราะมี FK ไป players)
+        const { error: deleteSubError } = await supabase
+          .from('submissions')
+          .delete()
+          .eq('game_id', game.id);
+
+        if (deleteSubError) throw new Error(deleteSubError.message);
+
+        // 2. ลบ players ของ game นี้
+        const { error: deletePlayersError } = await supabase
+          .from('players')
+          .delete()
+          .eq('game_id', game.id);
+
+        if (deletePlayersError) throw new Error(deletePlayersError.message);
+
+        // 3. Reset game state → LOBBY
         const { error: updateError } = await supabase
           .from('games')
           .update({
             phase: 'LOBBY',
-            round_number: game.round_number + 1,
             stock: null,
             writing_started_at: null,
             writing_ends_at: null,

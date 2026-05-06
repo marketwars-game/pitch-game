@@ -2,15 +2,18 @@
 // FILE: src/components/admin/AdminDashboard.tsx
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v1
+// VERSION: T2-v2
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Main admin panel after auth — orchestrates all sub-components
 //          - Subscribes to game state + player status
-//          - Manages modals (PlayerDetail + ConfirmReveal)
+//          - Manages modals (PlayerDetail + ConfirmReveal + ConfirmReset)
 //          - Provides phase control actions to children
 //
 // CHANGE LOG:
+//   T2-v2 (2026-05-06): Wire ConfirmResetModal for "เริ่มรอบใหม่"
+//                        startNextRound() เป็น destructive action
+//                        ต้อง confirm ก่อน — แสดงรายชื่อ player ที่จะถูกลบ
 //   T2-v1 (2026-05-06): Initial
 // =====================================================
 'use client';
@@ -28,6 +31,7 @@ import { GameControlPanel } from './GameControlPanel';
 import { PlayerStatusList } from './PlayerStatusList';
 import { PlayerDetailModal } from './PlayerDetailModal';
 import { ConfirmRevealModal } from './ConfirmRevealModal';
+import { ConfirmResetModal } from './ConfirmResetModal';
 
 export interface AdminDashboardProps {
   onLogout: () => void;
@@ -48,7 +52,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   // Modals state
   const [detailPlayerId, setDetailPlayerId] = useState<string | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmRevealOpen, setConfirmRevealOpen] = useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
 
   const detailPlayer = useMemo(
     () => enrichedPlayers.find((p) => p.player.id === detailPlayerId) ?? null,
@@ -66,7 +71,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     [enrichedPlayers]
   );
 
-  // Loading
   if (gameLoading) {
     return (
       <main
@@ -112,14 +116,14 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     } else if (phase === 'WRITING') {
       await phaseControl.closeWriting();
     } else if (phase === 'JUDGING') {
-      // ถ้ามี unresolved → เปิด confirm modal, ถ้าไม่มี → revealResults เลย
       if (unresolvedPlayers.length > 0) {
-        setConfirmOpen(true);
+        setConfirmRevealOpen(true);
       } else {
         await phaseControl.revealResults([]);
       }
     } else if (phase === 'RESULTS') {
-      await phaseControl.startNextRound();
+      // T2-v2: เปิด confirm modal ก่อน — destructive action
+      setConfirmResetOpen(true);
     }
   };
 
@@ -128,7 +132,12 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       .map((p) => p.submission?.id)
       .filter((id): id is string => Boolean(id));
     await phaseControl.revealResults(submissionIds);
-    setConfirmOpen(false);
+    setConfirmRevealOpen(false);
+  };
+
+  const handleConfirmReset = async () => {
+    await phaseControl.startNextRound();
+    setConfirmResetOpen(false);
   };
 
   return (
@@ -145,7 +154,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         flexDirection: 'column',
       }}
     >
-      {/* Mesh background */}
       <div
         aria-hidden
         style={{
@@ -183,7 +191,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             gap: 16,
             padding: 18,
             gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-            // Portrait/narrow → stack
             ...(typeof window !== 'undefined' && window.innerWidth < 900
               ? { gridTemplateColumns: '1fr' }
               : {}),
@@ -240,16 +247,24 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         />
       )}
 
-      {confirmOpen && (
+      {confirmRevealOpen && (
         <ConfirmRevealModal
           unresolvedPlayers={unresolvedPlayers}
           busy={phaseControl.busy}
-          onCancel={() => setConfirmOpen(false)}
+          onCancel={() => setConfirmRevealOpen(false)}
           onConfirm={handleConfirmReveal}
         />
       )}
 
-      {/* Global keyframes */}
+      {confirmResetOpen && (
+        <ConfirmResetModal
+          playerCount={counts.total}
+          busy={phaseControl.busy}
+          onCancel={() => setConfirmResetOpen(false)}
+          onConfirm={handleConfirmReset}
+        />
+      )}
+
       <style>{`
         @keyframes pg-mesh-shift {
           0%   { transform: translate(0, 0) scale(1); }

@@ -1,15 +1,22 @@
 // =====================================================
 // FILE: src/hooks/usePlayer.ts
 // PROJECT: pitch-game
-// TASK: T1 — Player View + Realtime
-// VERSION: T1-v3
+// TASK: T2 — Admin Panel + Phase Control
+// VERSION: T2-v2
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: จัดการ player session — localStorage persistence + join action
-//          Mount: load player จาก localStorage (ถ้ามี)
-//          join(nickname) → INSERT players row + เซฟลง localStorage
+//          - Mount: load player จาก localStorage (ถ้ามี)
+//          - join(nickname) → INSERT players row + เซฟลง localStorage
+//          - Reset detection: ถ้า admin ลบ players (full reset) → clear session
 //
 // CHANGE LOG:
+//   T2-v2 (2026-05-06): Add reset detection
+//                        Subscribe games.phase changes — เมื่อ phase = LOBBY (จาก state อื่น)
+//                        → query player record ตัวเอง → ถ้าไม่เจอ → clear()
+//                        → Player View จะกลับไปหน้าใส่ชื่อเล่น
+//                        Reason: Admin "เริ่มรอบใหม่" ทำ full reset (ลบ players + submissions)
+//                        ทุก player ต้อง re-join ใหม่ — UX clean ทุกรอบ
 //   T1-v3 (2026-05-06): Revert v2 cast — typed client (T1-v3) ทำให้ data จาก insert
 //                        เป็น PlayerRow โดยตรง ไม่ต้อง cast
 //   T1-v2 (2026-05-06): [reverted] Cast insert result เป็น PlayerRow (untyped client)
@@ -17,7 +24,7 @@
 // =====================================================
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import {
   LS_KEY_PLAYER_ID,
@@ -49,14 +56,20 @@ export interface UsePlayerResult {
  * - join(nickname): INSERT players, save ลง localStorage, set session
  * - clear(): ล้าง localStorage (ใช้ตอน reset / debug)
  *
- * หมายเหตุ: validate ว่า game_id ที่เก็บไว้ตรงกับ gameId arg ปัจจุบัน
- * ถ้า user เคย join เกมอื่น session จะถูกล้าง
+ * Reset detection (T2-v2):
+ * - Subscribe games.phase change → เมื่อ phase กลายเป็น LOBBY (จาก phase อื่น)
+ *   → query player record ตัวเอง → ถ้าไม่เจอ (admin ลบไปแล้ว) → clear()
+ * - การ subscribe นี้รัน "นอกเหนือ" จาก useGameState ที่ component ใช้อยู่
+ *   เพื่อให้ usePlayer self-contained — ไม่ต้องรับ game state จาก parent
  */
 export function usePlayer(gameId: string): UsePlayerResult {
   const [player, setPlayer] = useState<PlayerSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Track previous phase เพื่อ detect transition → LOBBY
+  const prevPhaseRef = useRef<string | null>(null);
 
   // Mount: load จาก localStorage
   useEffect(() => {
@@ -141,6 +154,84 @@ export function usePlayer(gameId: string): UsePlayerResult {
     setPlayer(null);
     setError(null);
   }, []);
+
+  // ============================================================
+  // Reset detection (T2-v2)
+  // Subscribe games.phase — ถ้า phase เปลี่ยนเป็น LOBBY (จาก phase อื่น)
+  // → admin อาจเพิ่งกด "เริ่มรอบใหม่" → ลบ players ทั้งหมด
+  // → query player record ตัวเอง → ถ้าไม่เจอ → clear()
+  // ============================================================
+  useEffect(() => {
+    if (!player) {
+      prevPhaseRef.current = null;
+      return;
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    let cancelled = false;
+
+    // 1. อ่าน phase ปัจจุบันก่อน เพื่อ baseline
+    supabase
+      .from('games')
+      .select('phase')
+      .eq('id', gameId)
+      .single()
+      .then(({ data }) => {
+        if (cancelled) return;
+        if (data?.phase) {
+          prevPhaseRef.current = data.phase;
+        }
+      });
+
+    // 2. Subscribe UPDATE event ของ game นี้
+    const channel = supabase
+      .channel(`player-reset-detect:${player.playerId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'games',
+          filter: `id=eq.${gameId}`,
+        },
+        async (payload) => {
+          if (cancelled) return;
+          const newPhase = (payload.new as { phase?: string })?.phase;
+          const oldPhase = prevPhaseRef.current;
+
+          // Detect transition: any phase → LOBBY (signal of "เริ่มรอบใหม่")
+          if (newPhase === 'LOBBY' && oldPhase && oldPhase !== 'LOBBY') {
+            // Validate ว่า player record ของเรายังมีอยู่
+            try {
+              const { data: playerData } = await supabase
+                .from('players')
+                .select('id')
+                .eq('id', player.playerId)
+                .maybeSingle();
+
+              if (cancelled) return;
+
+              if (!playerData) {
+                // Record ถูกลบแล้ว → clear session → กลับหน้าใส่ชื่อเล่น
+                clear();
+              }
+            } catch {
+              // ถ้า query fail — ไม่ทำอะไร (ปลอดภัยกว่าการ clear ผิด)
+            }
+          }
+
+          if (newPhase) {
+            prevPhaseRef.current = newPhase;
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [player, gameId, clear]);
 
   return { player, loading, joining, error, join, clear };
 }
