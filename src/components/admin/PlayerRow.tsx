@@ -2,13 +2,17 @@
 // FILE: src/components/admin/PlayerRow.tsx
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v1
+// VERSION: T2-v2
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Single player row in PlayerStatusList
 //          Status pill + optional score + 👁/🔄 action button
+//          Optional rank emoji (🥇🥈🥉) for top 3 at RESULTS phase
 //
 // CHANGE LOG:
+//   T2-v2 (2026-05-06): Add showRankEmoji prop
+//                        - Top 3 (idx 1-3): emoji 🥇🥈🥉
+//                        - 4+: เลข #4, #5, ...
 //   T2-v1 (2026-05-06): Initial
 // =====================================================
 'use client';
@@ -19,6 +23,7 @@ export interface PlayerRowProps {
   index: number;
   enriched: PlayerStatusEnriched;
   showScore: boolean;
+  showRankEmoji?: boolean;
   onClick: () => void;
 }
 
@@ -57,16 +62,29 @@ const STATUS_STYLES: Record<PlayerStatus, React.CSSProperties> = {
   },
 };
 
+const RANK_EMOJI: Record<number, string> = {
+  1: '🥇',
+  2: '🥈',
+  3: '🥉',
+};
+
 export function PlayerRow({
   index,
   enriched,
   showScore,
+  showRankEmoji = false,
   onClick,
 }: PlayerRowProps) {
   const { player, status, submission } = enriched;
   const finalScore = submission?.scores?.finalScore;
   const isFailed = status === 'failed';
-  const canViewDetail = status !== 'writing'; // ต้องมี submission ก่อนถึงจะเปิด modal ได้
+  const canViewDetail = status !== 'writing';
+
+  // Rank display: emoji ที่ top 3 ถ้า showRankEmoji, ไม่งั้นแสดงเลข
+  const rankDisplay =
+    showRankEmoji && RANK_EMOJI[index]
+      ? RANK_EMOJI[index]
+      : index;
 
   const cellStyle: React.CSSProperties = {
     padding: '10px 6px',
@@ -78,9 +96,15 @@ export function PlayerRow({
   return (
     <>
       <div
-        style={{ ...cellStyle, color: '#71717A', justifyContent: 'center' }}
+        style={{
+          ...cellStyle,
+          color: '#71717A',
+          justifyContent: 'center',
+          fontSize: showRankEmoji && RANK_EMOJI[index] ? 18 : 12,
+          fontWeight: showRankEmoji && index <= 3 ? 800 : 400,
+        }}
       >
-        {index}
+        {rankDisplay}
       </div>
       <div
         onClick={canViewDetail ? onClick : undefined}
