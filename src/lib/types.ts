@@ -1,19 +1,21 @@
 // =====================================================
 // FILE: src/lib/types.ts
 // PROJECT: pitch-game
-// TASK: T1 — Player View + Realtime
-// VERSION: T1-v4
+// TASK: T2 — Admin Panel + Phase Control
+// VERSION: T2-v1
 // CREATED: 2026-05-05
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Database & domain types — share กันระหว่าง client + server
 //
 // CHANGE LOG:
+//   T2-v1 (2026-05-06): เพิ่ม fields สำหรับ T2:
+//                        - round_number ใน GameRow, PlayerRow, SubmissionRow
+//                        - judging_status, auto_defaulted ใน SubmissionRow
+//                        - JudgingStatus type
+//                        - PlayerStatus + PlayerStatusEnriched สำหรับ admin
+//                        - Default config: AUTO_DEFAULT_SCORE constants
+//                        - localStorage key สำหรับ admin auth
 //   T1-v4 (2026-05-06): เปลี่ยน interface → type alias ทุกตัว
-//                        Supabase v2.105 ใช้ Schema extends GenericSchema check
-//                        และ GenericTable.Row = Record<string, unknown>
-//                        TypeScript 5.9 strict mode: interface ไม่ implicitly
-//                        match Record<string, unknown> index signature → schema fall to never
-//                        type alias match ได้ → schema resolve ถูก
 //   T1-v3 (2026-05-06): เพิ่ม __InternalSupabase field ใน Database
 //   T1-v2 (2026-05-06): เพิ่ม Views/Functions/Enums/CompositeTypes
 //   T1-v1 (2026-05-06): เพิ่ม pitchMinLength + pitchMaxLength ใน GameConfig
@@ -34,7 +36,7 @@ export type StockData = {
   exchange: string;       // "NASDAQ"
   price: string;          // "$131.29"
   ytdChange: string;      // "-2.3%"
-  description: string;    // คำอธิบายบริษัท 1-2 ประโยค (เก็บไว้ใช้ใน Presenter View ภายหลัง)
+  description: string;    // คำอธิบายบริษัท 1-2 ประโยค
   marketCap: string;      // "$3.21T"
   peRatio: string;        // "39.3x"
   revenueGrowth: string;  // "+114%"
@@ -56,7 +58,7 @@ export type GameConfig = {
 // AI Judge Score
 // =====================================================
 export type JudgeScore = {
-  score: number;     // 1-10
+  score: number;     // 0-10 (0 = auto-default)
   comment: string;   // 1-2 ประโยค ภาษาไทย
 };
 
@@ -69,7 +71,17 @@ export type SubmissionScores = {
 };
 
 // =====================================================
-// Database Rows
+// Judging Status (NEW T2)
+// =====================================================
+// streaming judging lifecycle:
+//   pending     → submission created, ยังไม่ trigger judge
+//   in_progress → API กำลังยิง 3 personas
+//   done        → ได้ scores ครบ
+//   failed      → ลอง retry แล้ว fail (admin manual re-judge ได้)
+export type JudgingStatus = 'pending' | 'in_progress' | 'done' | 'failed';
+
+// =====================================================
+// Database Rows (UPDATED T2)
 // =====================================================
 export type GameRow = {
   id: string;
@@ -79,6 +91,7 @@ export type GameRow = {
   writing_started_at: string | null;
   writing_ends_at: string | null;
   created_at: string;
+  round_number: number;        // NEW T2 — multi-round support
 };
 
 export type PlayerRow = {
@@ -86,6 +99,7 @@ export type PlayerRow = {
   game_id: string;
   nickname: string;
   joined_at: string;
+  round_number: number;        // NEW T2
 };
 
 export type SubmissionRow = {
@@ -96,6 +110,35 @@ export type SubmissionRow = {
   submitted_at: string;
   auto_submitted: boolean;
   scores: SubmissionScores | null;
+  round_number: number;        // NEW T2
+  judging_status: JudgingStatus;  // NEW T2 — streaming judging
+  auto_defaulted: boolean;     // NEW T2 — admin-only flag
+};
+
+// =====================================================
+// Player Status Enriched (NEW T2 — UI domain)
+// =====================================================
+// สำหรับ Admin Panel — แต่ละ player มี status ต่างกันตาม submission state
+export type PlayerStatus =
+  | 'writing'     // joined แต่ยังไม่ submit
+  | 'submitted'   // submission row created, judging_status = pending
+  | 'scoring'     // judging_status = in_progress
+  | 'scored'      // judging_status = done
+  | 'failed';     // judging_status = failed
+
+export type PlayerStatusEnriched = {
+  player: PlayerRow;
+  submission: SubmissionRow | null;
+  status: PlayerStatus;
+};
+
+export type PlayerCounts = {
+  total: number;
+  joined: number;     // total - submitted (ยังไม่ submit)
+  submitted: number;  // submission row exists
+  scoring: number;    // in_progress
+  scored: number;     // done
+  failed: number;     // failed
 };
 
 // =====================================================
@@ -109,6 +152,9 @@ export const LS_KEY_PLAYER_ID = 'pitchgame:player_id';
 export const LS_KEY_PLAYER_NICKNAME = 'pitchgame:nickname';
 export const LS_KEY_GAME_ID = 'pitchgame:game_id';
 
+// localStorage key (admin session — NEW T2)
+export const LS_KEY_ADMIN_OK = 'pitchgame:admin_ok';
+
 // Nickname constraints (UI-level)
 export const NICKNAME_MAX_LENGTH = 20;
 
@@ -117,6 +163,15 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   writingTimeSeconds: 240,
   pitchMinLength: 50,
   pitchMaxLength: 1500,
+};
+
+// Auto-default constants (NEW T2)
+// เมื่อ admin กด "ดำเนินต่อ" ใน Confirm Reveal Modal สำหรับ failed players
+export const AUTO_DEFAULT_SCORE: SubmissionScores = {
+  analyst: { score: 0, comment: 'AI ตัดสินไม่สำเร็จ — ใส่ default' },
+  creative: { score: 0, comment: 'AI ตัดสินไม่สำเร็จ — ใส่ default' },
+  communicator: { score: 0, comment: 'AI ตัดสินไม่สำเร็จ — ใส่ default' },
+  finalScore: 0,
 };
 
 // =====================================================
@@ -140,9 +195,10 @@ export type Database = {
       };
       players: {
         Row: PlayerRow;
-        Insert: Omit<PlayerRow, 'id' | 'joined_at'> & {
+        Insert: Omit<PlayerRow, 'id' | 'joined_at' | 'round_number'> & {
           id?: string;
           joined_at?: string;
+          round_number?: number;
         };
         Update: Partial<PlayerRow>;
         Relationships: [
@@ -157,11 +213,23 @@ export type Database = {
       };
       submissions: {
         Row: SubmissionRow;
-        Insert: Omit<SubmissionRow, 'id' | 'submitted_at' | 'auto_submitted' | 'scores'> & {
+        Insert: Omit<
+          SubmissionRow,
+          | 'id'
+          | 'submitted_at'
+          | 'auto_submitted'
+          | 'scores'
+          | 'round_number'
+          | 'judging_status'
+          | 'auto_defaulted'
+        > & {
           id?: string;
           submitted_at?: string;
           auto_submitted?: boolean;
           scores?: SubmissionScores | null;
+          round_number?: number;
+          judging_status?: JudgingStatus;
+          auto_defaulted?: boolean;
         };
         Update: Partial<SubmissionRow>;
         Relationships: [
