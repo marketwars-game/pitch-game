@@ -1,20 +1,25 @@
 // =====================================================
 // FILE: src/app/api/judge/route.ts
 // PROJECT: pitch-game
-// TASK: T3 — AI Judge API
-// VERSION: T3-v1
+// TASK: T5 — Judge Fix (Tool Use)
+// VERSION: T5-v2
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-05-06
+// LAST MODIFIED: 2026-05-07
 // PURPOSE: POST /api/judge — รับ submissionId → ยิง 3 personas parallel → UPDATE scores
-//          - Streaming model: ถูกเรียกทันทีหลัง player submit (fire-and-forget)
-//          - Idempotent: ถ้า submission.judging_status='done' แล้ว → skip
-//          - Resilient: 2/3 personas สำเร็จ → ยังถือว่า done
-//          - Failure: 0/3 → mark failed (admin Confirm Reveal handle ต่อ)
+//   - Streaming model: ถูกเรียกทันทีหลัง player submit (fire-and-forget)
+//   - Idempotent: ถ้า submission.judging_status='done' แล้ว → skip
+//   - Resilient: 2/3 personas สำเร็จ → ยังถือว่า done
+//   - Failure: 0/3 → mark failed (admin Confirm Reveal handle ต่อ)
 //
 // Body: { submissionId: string }
 // Response: { ok: true, status: 'done' | 'failed', personas_succeeded: number }
 //
 // CHANGE LOG:
+//   T5-v2 (2026-05-07): Adapted to Tool Use callJudge signature
+//                        - callJudge now returns JudgeResponse directly (no parse step)
+//                        - Removed parseJudgeResponse import (no longer exported)
+//                        - JudgeResponse imported from anthropic.ts (moved from judge-prompts.ts)
+//                        Same 3-persona parallel + 2/3 success threshold logic
 //   T3-v1 (2026-05-06): Initial
 // =====================================================
 
@@ -22,14 +27,11 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import {
   PERSONA_KEYS,
-  PERSONA_LABELS,
   SYSTEM_PROMPTS,
   buildUserMessage,
-  parseJudgeResponse,
   type PersonaKey,
-  type JudgeResponse,
 } from '@/lib/judge-prompts';
-import { callJudge } from '@/lib/anthropic';
+import { callJudge, type JudgeResponse } from '@/lib/anthropic';
 import type {
   Database,
   SubmissionRow,
@@ -41,7 +43,6 @@ import type {
 // Server-side Supabase client (service role)
 // =====================================================
 // Required env: NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
-
 function getServerSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -58,7 +59,6 @@ function getServerSupabase() {
 // =====================================================
 // Fallback comments (เมื่อ persona ตัวนึงพังหมด)
 // =====================================================
-
 const FALLBACK_COMMENTS: Record<PersonaKey, string> = {
   analyst: 'พี่ Analyst ขออนุญาตเข้าห้องน้ำสักครู่ — กรรมการอีก 2 ท่านตัดสินแทน',
   creative: 'พี่ Creative ติดวาดรูปอยู่ครับ — รอบนี้ฟัง 2 ท่านแทน',
@@ -68,17 +68,16 @@ const FALLBACK_COMMENTS: Record<PersonaKey, string> = {
 // =====================================================
 // Run one persona — return null if all retries fail
 // =====================================================
-
 async function runPersona(
   persona: PersonaKey,
   userMessage: string
 ): Promise<JudgeResponse | null> {
   try {
-    const raw = await callJudge({
+    // T5-v2: callJudge now returns parsed JudgeResponse directly (Tool Use)
+    return await callJudge({
       systemPrompt: SYSTEM_PROMPTS[persona],
       userMessage,
     });
-    return parseJudgeResponse(raw);
   } catch (err) {
     console.error(
       `[judge] persona ${persona} failed:`,
@@ -91,7 +90,6 @@ async function runPersona(
 // =====================================================
 // Calculate finalScore = avg of successful personas
 // =====================================================
-
 function calcFinalScore(
   results: Record<PersonaKey, JudgeResponse | null>
 ): number {
@@ -106,7 +104,6 @@ function calcFinalScore(
 // =====================================================
 // POST handler
 // =====================================================
-
 export async function POST(request: Request) {
   let body: { submissionId?: string };
   try {
@@ -145,9 +142,9 @@ export async function POST(request: Request) {
   const sub = submission as SubmissionRow;
 
   // 2. Idempotency — skip ถ้า done แล้ว (ยกเว้น manual re-judge ที่ admin trigger)
-  //    เราอนุญาตให้ re-run ถ้า status = 'failed' (admin Re-judge)
-  //    และ re-run ถ้า status = 'pending' (normal flow)
-  //    ไม่ re-run ถ้า status = 'in_progress' (กันยิงซ้ำ) หรือ 'done'
+  // เราอนุญาตให้ re-run ถ้า status = 'failed' (admin Re-judge)
+  // และ re-run ถ้า status = 'pending' (normal flow)
+  // ไม่ re-run ถ้า status = 'in_progress' (กันยิงซ้ำ) หรือ 'done'
   if (sub.judging_status === 'done') {
     return NextResponse.json({
       ok: true,
@@ -156,6 +153,7 @@ export async function POST(request: Request) {
       reason: 'already done',
     });
   }
+
   if (sub.judging_status === 'in_progress') {
     return NextResponse.json({
       ok: true,
@@ -194,7 +192,6 @@ export async function POST(request: Request) {
 
   // 5. Build user message + run 3 personas in parallel
   const userMessage = buildUserMessage(stock, sub.pitch);
-
   const [analystResult, creativeResult, communicatorResult] = await Promise.all([
     runPersona('analyst', userMessage),
     runPersona('creative', userMessage),
@@ -227,6 +224,7 @@ export async function POST(request: Request) {
   }
 
   let finalStatus: 'done' | 'failed';
+
   if (succeededCount === 0) {
     finalStatus = 'failed';
     // ไม่บันทึก scores ตอน failed — ให้ admin Confirm Reveal handle (auto_defaulted)
@@ -247,6 +245,7 @@ export async function POST(request: Request) {
   }
 
   finalStatus = 'done';
+
   const { error: doneError } = await supabase
     .from('submissions')
     .update({
@@ -275,5 +274,5 @@ export async function POST(request: Request) {
 // Allow longer timeout (Vercel default = 10s, judge อาจใช้ 15-25s)
 // =====================================================
 // On Vercel hobby plan max = 60s. Pro plan = 300s.
-// 25s ปลอดภัยสำหรับ Haiku 4.5 + retry 3 ครั้ง
+// 60s safe สำหรับ Haiku 4.5 + retry 3 ครั้ง + 3 personas parallel
 export const maxDuration = 60;
