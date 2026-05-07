@@ -1,16 +1,21 @@
 // =====================================================
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
-// TASK: T1 — Player View + Realtime
-// VERSION: T1-v2
+// TASK: T5 — Player Fix (Score Alignment)
+// VERSION: T5-v2
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-05-06
+// LAST MODIFIED: 2026-05-07
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
-//          State 8: full results (vibrant + watermark + sparkles + 3 judge cards + rank)
-//          State 9: not playing (faded "การแข่งขันสิ้นสุด")
-//          คำนวณ rank โดย subscribe submissions ทั้งหมดในเกม
+//   State 8: full results (vibrant + watermark + sparkles + 3 judge cards + rank)
+//   State 9: not playing (faded "การแข่งขันสิ้นสุด")
+//   คำนวณ rank โดย subscribe submissions ทั้งหมดในเกม
 //
 // CHANGE LOG:
+//   T5-v2 (2026-05-07): Fix score "/ 10" alignment — แก้ visual gap ของ "/ 10" ที่ลอยห่างจากคะแนน
+//                        - Wrap score + "/ 10" ใน inline-flex baseline container
+//                        - ลด letter-spacing -2.5px → -1.5px (ลด visual narrow ที่ทำให้ /10 ดูห่าง)
+//                        - ใช้ gap: 6px (consistent spacing)
+//                        - ลด right-side empty space — score+suffix อ่านเป็นกลุ่มเดียว
 //   T1-v2 (2026-05-06): Fix TypeScript build error — useRank() select('id, scores')
 //                        infer เป็น 'never' บน typed client
 //                        Cast result เป็น Pick<SubmissionRow, 'id' | 'scores'>[]
@@ -152,7 +157,8 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
           </div>
         </div>
 
-        {/* Final score (gradient text) */}
+        {/* Final score (gradient text)
+            T5-v2: Wrap score + "/ 10" ใน inline-flex baseline เพื่อให้ตัวเลขอยู่ติดกัน */}
         <div
           style={{
             textAlign: 'center',
@@ -163,30 +169,37 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
         >
           <span
             style={{
-              fontSize: 64,
-              fontWeight: 800,
-              background: 'linear-gradient(135deg, #5DF591 0%, #FFD93D 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              lineHeight: 1,
-              letterSpacing: '-2.5px',
-              fontVariantNumeric: 'tabular-nums',
-              display: 'inline-block',
+              display: 'inline-flex',
+              alignItems: 'baseline',
+              gap: 6,
             }}
           >
-            {finalScore !== null ? finalScore.toFixed(1) : '—'}
+            <span
+              style={{
+                fontSize: 64,
+                fontWeight: 800,
+                background: 'linear-gradient(135deg, #5DF591 0%, #FFD93D 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                lineHeight: 1,
+                letterSpacing: '-1.5px',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {finalScore !== null ? finalScore.toFixed(1) : '—'}
+            </span>
+            <span
+              style={{
+                fontSize: 18,
+                color: '#71717A',
+                fontWeight: 600,
+              }}
+            >
+              / 10
+            </span>
           </span>
-          <span
-            style={{
-              fontSize: 18,
-              color: '#71717A',
-              fontWeight: 600,
-              marginLeft: 4,
-            }}
-          >
-            / 10
-          </span>
+
           {isAutoSubmitted && (
             <div style={{ marginTop: 6 }}>
               <span
@@ -271,7 +284,6 @@ function JudgeCard({
 }) {
   const c = JUDGE_COLORS[variant];
   const hasScore = !!score;
-
   return (
     <div
       style={{
