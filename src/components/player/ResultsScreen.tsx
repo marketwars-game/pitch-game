@@ -1,8 +1,8 @@
 // =====================================================
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
-// TASK: T5 — Player Fix (Score Alignment)
-// VERSION: T5-v2
+// TASK: T5 — Player Fix (Score Alignment) — v2 retry
+// VERSION: T5-v3
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-07
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
@@ -11,11 +11,15 @@
 //   คำนวณ rank โดย subscribe submissions ทั้งหมดในเกม
 //
 // CHANGE LOG:
-//   T5-v2 (2026-05-07): Fix score "/ 10" alignment — แก้ visual gap ของ "/ 10" ที่ลอยห่างจากคะแนน
-//                        - Wrap score + "/ 10" ใน inline-flex baseline container
-//                        - ลด letter-spacing -2.5px → -1.5px (ลด visual narrow ที่ทำให้ /10 ดูห่าง)
-//                        - ใช้ gap: 6px (consistent spacing)
-//                        - ลด right-side empty space — score+suffix อ่านเป็นกลุ่มเดียว
+//   T5-v3 (2026-05-07): Score "/10" alignment fix — retry (T5-v2 ไม่ work)
+//                        Root cause T5-v2: inline-flex ใน text-align:center parent
+//                        ทำให้ /10 ลอยขวา (inline-flex element ไม่ center predictably)
+//                        Fix: ใช้ flex parent ตรงๆ — predictable + 100% browsers
+//                        - Outer: display:flex + justifyContent:center + alignItems:baseline
+//                        - Children: direct (no nested inline-flex)
+//                        - autoSubmitted badge ย้ายเป็น sibling row (ไม่อยู่ใน flex row score)
+//                        - Letter-spacing คง -1.5px
+//   T5-v2 (2026-05-07): [partial] Wrap inline-flex baseline (ไม่ work บนจอจริง)
 //   T1-v2 (2026-05-06): Fix TypeScript build error — useRank() select('id, scores')
 //                        infer เป็น 'never' บน typed client
 //                        Cast result เป็น Pick<SubmissionRow, 'id' | 'scores'>[]
@@ -157,69 +161,77 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
           </div>
         </div>
 
-        {/* Final score (gradient text)
-            T5-v2: Wrap score + "/ 10" ใน inline-flex baseline เพื่อให้ตัวเลขอยู่ติดกัน */}
+        {/* T5-v3: Score row — flex parent (ไม่ใช่ text-align:center)
+            เหตุผล: inline-flex child ใน text-align:center parent ไม่ center predictable
+            Solution: parent เป็น flex + justifyContent:center → children alignment ตรง 100% */}
         <div
           style={{
-            textAlign: 'center',
-            margin: '4px 0 22px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'baseline',
+            gap: 6,
+            margin: '4px 0 6px',
             position: 'relative',
             zIndex: 2,
           }}
         >
           <span
             style={{
-              display: 'inline-flex',
-              alignItems: 'baseline',
-              gap: 6,
+              fontSize: 64,
+              fontWeight: 800,
+              background: 'linear-gradient(135deg, #5DF591 0%, #FFD93D 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              lineHeight: 1,
+              letterSpacing: '-1.5px',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {finalScore !== null ? finalScore.toFixed(1) : '—'}
+          </span>
+          <span
+            style={{
+              fontSize: 18,
+              color: '#71717A',
+              fontWeight: 600,
+            }}
+          >
+            / 10
+          </span>
+        </div>
+
+        {/* T5-v3: Auto-submitted badge — sibling row (เคยอยู่ใน flex row score)
+            ต้องอยู่นอก score flex row เพื่อไม่ให้ badge ติดข้างคะแนน */}
+        {isAutoSubmitted && (
+          <div
+            style={{
+              textAlign: 'center',
+              marginBottom: 22,
+              position: 'relative',
+              zIndex: 2,
             }}
           >
             <span
               style={{
-                fontSize: 64,
-                fontWeight: 800,
-                background: 'linear-gradient(135deg, #5DF591 0%, #FFD93D 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                lineHeight: 1,
-                letterSpacing: '-1.5px',
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {finalScore !== null ? finalScore.toFixed(1) : '—'}
-            </span>
-            <span
-              style={{
-                fontSize: 18,
-                color: '#71717A',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: 10,
+                background: 'rgba(255,140,66,0.15)',
+                color: '#FF8C42',
+                padding: '2px 8px',
+                borderRadius: 999,
                 fontWeight: 600,
               }}
             >
-              / 10
+              ⏱ ส่งอัตโนมัติ
             </span>
-          </span>
+          </div>
+        )}
 
-          {isAutoSubmitted && (
-            <div style={{ marginTop: 6 }}>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: 10,
-                  background: 'rgba(255,140,66,0.15)',
-                  color: '#FF8C42',
-                  padding: '2px 8px',
-                  borderRadius: 999,
-                  fontWeight: 600,
-                }}
-              >
-                ⏱ ส่งอัตโนมัติ
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Spacer ถ้าไม่มี autoSubmitted badge — เพื่อ rhythm กับ judge cards */}
+        {!isAutoSubmitted && <div style={{ height: 16 }} />}
 
         {/* Judge cards 3 ใบ */}
         <JudgeCard
