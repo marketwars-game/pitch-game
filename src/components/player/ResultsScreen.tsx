@@ -1,16 +1,24 @@
 // =====================================================
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
-// TASK: T5 — Player Fix (Score Alignment) — v2 retry
-// VERSION: T5-v3
+// TASK: T5 — Performance Fix (Realtime → Polling)
+// VERSION: T5-v4
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-07
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
 //   State 8: full results (vibrant + watermark + sparkles + 3 judge cards + rank)
 //   State 9: not playing (faded "การแข่งขันสิ้นสุด")
-//   คำนวณ rank โดย subscribe submissions ทั้งหมดในเกม
+//   คำนวณ rank โดย POLL submissions ทุก 5 วินาที (T5-v4: เปลี่ยนจาก realtime)
 //
 // CHANGE LOG:
+//   T5-v4 (2026-05-07): P0 — Replace useRank realtime subscription with polling
+//                        Reason: 100 players × 1 channel + N broadcasts ที่ judge เสร็จ
+//                        จะ saturate Supabase free tier realtime (200 quota)
+//                        Solution: setInterval(compute, 5000) — distributed load
+//                        Trade-off: rank update ช้าลง ~5 วิ (acceptable for RESULTS)
+//                        - ลบ supabase.channel('rank:...').subscribe()
+//                        - เพิ่ม initial fetch ทันที (no wait 5 วิ)
+//                        - clearInterval cleanup on unmount
 //   T5-v3 (2026-05-07): Score "/10" alignment fix — retry (T5-v2 ไม่ work)
 //                        Root cause T5-v2: inline-flex ใน text-align:center parent
 //                        ทำให้ /10 ลอยขวา (inline-flex element ไม่ center predictably)
@@ -417,8 +425,18 @@ function computeFinalScore(scores: SubmissionScores | null): number | null {
 }
 
 /**
- * Subscribe submissions ทั้งหมดในเกม + คำนวณ rank ของ submission ของผู้เล่น
- * Rank = ตำแหน่งหลัง sort ตาม finalScore จากมากไปน้อย
+ * Compute rank ของ player ปัจจุบัน — POLL ทุก 5 วินาที (T5-v4)
+ *
+ * เปลี่ยนจาก realtime subscription เพราะ:
+ * - 100 players × 1 channel × broadcast ทุก submission update = saturation
+ * - Free tier Supabase realtime quota = 200 channels
+ *
+ * Polling pattern:
+ * - mount: fetch ทันที (initial)
+ * - setInterval(compute, 5000): refresh ทุก 5 วินาที
+ * - unmount: clearInterval
+ *
+ * Trade-off: rank update ช้าลง ~5 วิ (acceptable เพราะ RESULTS phase ไม่เร่ง)
  */
 function useRank(gameId: string, mySubmissionId: string | null) {
   const [rank, setRank] = useState<number | null>(null);
@@ -460,27 +478,15 @@ function useRank(gameId: string, mySubmissionId: string | null) {
       setTotal(rows.length);
     };
 
+    // Initial fetch ทันที (ไม่รอ 5 วิ)
     compute();
 
-    const channel = supabase
-      .channel(`rank:${gameId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'submissions',
-          filter: `game_id=eq.${gameId}`,
-        },
-        () => {
-          if (!cancelled) compute();
-        }
-      )
-      .subscribe();
+    // Poll ทุก 5 วินาที
+    const intervalId = setInterval(compute, 5000);
 
     return () => {
       cancelled = true;
-      supabase.removeChannel(channel);
+      clearInterval(intervalId);
     };
   }, [gameId, mySubmissionId]);
 

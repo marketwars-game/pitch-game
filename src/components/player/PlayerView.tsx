@@ -1,23 +1,18 @@
 // =====================================================
 // FILE: src/components/player/PlayerView.tsx
 // PROJECT: pitch-game
-// TASK: T1 — Player View + Realtime
-// VERSION: T1-v1
+// TASK: T5 — Performance Fix (Pass phase to usePlayer)
+// VERSION: T5-v2
 // CREATED: 2026-05-05
-// LAST MODIFIED: 2026-05-06
+// LAST MODIFIED: 2026-05-07
 // PURPOSE: Player View main component — orchestrate hooks + route ไป screen ตาม phase
-//          Load global mesh-bg ทุก state เพื่อ visual consistency
-//          Routes:
-//            no player + LOBBY                → LobbyScreen "empty"
-//            no player + (WRITING/JUDGING/RESULTS) → LobbyScreen "blocked" (late join)
-//            has player + LOBBY               → LobbyScreen "joined"
-//            has player + WRITING             → WritingScreen (active หรือ submitted)
-//            has player + JUDGING + submitted → JudgingScreen "waiting"
-//            has player + JUDGING + !submitted→ JudgingScreen "not-playing"
-//            has player + RESULTS + submitted → ResultsScreen "full"
-//            has player + RESULTS + !submitted→ ResultsScreen "not-playing"
+//   Load global mesh-bg ทุก state เพื่อ visual consistency
 //
 // CHANGE LOG:
+//   T5-v2 (2026-05-07): P1 follow-up — pass phase to usePlayer
+//                        usePlayer T5-v4 รับ phase prop แทน subscribe games เอง
+//                        - คงสามารถ detect reset (any → LOBBY transition) ได้
+//                        - ลด channel duplicate (-100 channels บน 100 players)
 //   T1-v1 (2026-05-06): Full implementation — replaces T0-v2 placeholder
 //                        Mesh gradient bg + global keyframes + phase router
 //   T0-v2 (2026-05-06): Refactor เป็น wrapper pattern (placeholder)
@@ -37,13 +32,16 @@ import { DEFAULT_GAME_ID, DEFAULT_GAME_CONFIG } from '@/lib/types';
 
 export function PlayerView() {
   const gameId = DEFAULT_GAME_ID;
-
   const { game, phase, loading: gameLoading, error: gameError } = useGameState(gameId);
-  const { player, loading: playerLoading, joining, error: joinError, join } = usePlayer(gameId);
+
+  // T5-v2: pass phase to usePlayer (eliminates duplicate games subscription)
+  const { player, loading: playerLoading, joining, error: joinError, join } = usePlayer(
+    gameId,
+    phase
+  );
 
   const config = game?.config ?? DEFAULT_GAME_CONFIG;
   const countdown = useCountdown(game?.writing_ends_at ?? null, config.writingTimeSeconds);
-
   const {
     submission,
     submitting,
@@ -104,7 +102,6 @@ export function PlayerView() {
   }
 
   // ===== Phase routing =====
-
   // ยังไม่มี player session
   if (!player) {
     if (phase === 'LOBBY') {
@@ -124,6 +121,7 @@ export function PlayerView() {
         </Screen>
       );
     }
+
     // Late join — phase ผ่าน LOBBY ไปแล้ว
     return (
       <Screen>

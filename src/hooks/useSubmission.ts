@@ -1,21 +1,20 @@
 // =====================================================
 // FILE: src/hooks/useSubmission.ts
 // PROJECT: pitch-game
-// TASK: T3 — AI Judge API
-// VERSION: T3-v1
+// TASK: T5 — Performance Fix (event filter optimization)
+// VERSION: T5-v2
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-05-06
+// LAST MODIFIED: 2026-05-07
 // PURPOSE: Track submission row ของ player ปัจจุบัน + realtime score updates
-//          ให้ submit() action และ expose submission state (รวม scores ตอนพร้อม)
-//
-//          T3-v1: หลัง INSERT submission สำเร็จ → fire-and-forget POST /api/judge
-//          ฝั่ง server จะยิง 3 personas parallel + UPDATE scores
-//          Realtime subscribe เดิม (UPDATE) จะ pick up scores เมื่อ admin reveal
+//   ให้ submit() action และ expose submission state (รวม scores ตอนพร้อม)
 //
 // CHANGE LOG:
+//   T5-v2 (2026-05-07): P2 — เปลี่ยน subscribe event '*' → 'UPDATE'
+//                        Reason: INSERT มาจาก submit ของตัวเอง ผ่าน setSubmission()
+//                                ใน doInsert อยู่แล้ว — subscribe ซ้ำเปล่าประโยชน์
+//                        Effect: ลด event chatter (~50% events ลดลง)
 //   T3-v1 (2026-05-06): หลัง INSERT submission → fetch POST /api/judge (fire-and-forget)
 //                        Player UI ไม่ block — server ทำงาน background
-//                        Error ใน fetch judge ไม่ทำให้ submit fail (DB row ผ่านไปแล้ว)
 //   T1-v3 (2026-05-06): Sync version กับ typed client revert (supabase.ts T1-v3)
 //   T1-v2 (2026-05-06): [reverted] Version bump (untyped client compat)
 //   T1-v1 (2026-05-06): Initial — fetch + subscribe + submit + autoSubmit
@@ -39,8 +38,9 @@ export interface UseSubmissionResult {
  * Track submission ของ (gameId, playerId)
  *
  * - mount: fetch submission row ที่มีอยู่ (ถ้าเคย submit ไปแล้ว)
- * - subscribe INSERT/UPDATE บน submissions filter โดย player_id
- *   (ครอบคลุม: INSERT ของตัวเองหลัง submit + UPDATE scores จาก API route)
+ * - subscribe UPDATE only (T5-v2) บน submissions filter โดย player_id
+ *   - INSERT ของตัวเองผ่าน setSubmission() ใน doInsert แล้ว
+ *   - UPDATE = scores ที่ AI judge เขียนกลับมา
  * - submit(pitch): INSERT พร้อม auto_submitted=false + trigger /api/judge
  * - autoSubmit(pitch): INSERT พร้อม auto_submitted=true + trigger /api/judge
  *
@@ -84,23 +84,21 @@ export function useSubmission(
         setLoading(false);
       });
 
-    // 2. Realtime: ฟัง INSERT + UPDATE บน submissions ของ player คนนี้
+    // 2. Realtime: ฟัง UPDATE only (T5-v2)
+    //    INSERT ผ่าน doInsert() → setSubmission() แล้ว
+    //    UPDATE = scores จาก AI judge → ต้อง pickup
     const channel = supabase
       .channel(`submission:${playerId}`)
       .on(
         'postgres_changes',
         {
-          event: '*', // INSERT (submit ของตัวเอง) + UPDATE (scores จาก API)
+          event: 'UPDATE',
           schema: 'public',
           table: 'submissions',
           filter: `player_id=eq.${playerId}`,
         },
         (payload) => {
           if (cancelled) return;
-          if (payload.eventType === 'DELETE') {
-            setSubmission(null);
-            return;
-          }
           setSubmission(payload.new as SubmissionRow);
         }
       )
@@ -119,6 +117,7 @@ export function useSubmission(
         setError('ยังไม่ได้เข้าร่วมเกม');
         return false;
       }
+
       // No-op ถ้า submit ไปแล้ว (idempotent)
       if (submission) return true;
 
@@ -154,12 +153,8 @@ export function useSubmission(
         setSubmitting(false);
 
         // T3-v1: fire-and-forget /api/judge
-        // - ไม่ await — Player UI ไม่ block
-        // - error ใน judge call ไม่ทำให้ submit fail (DB row INSERT ผ่านแล้ว)
-        // - server จะ UPDATE scores → realtime subscribe จะ pick up
         triggerJudge(newSubmission.id).catch((err) => {
           console.error('[useSubmission] judge trigger failed:', err);
-          // ไม่ surface error — admin Re-judge button จะเป็น recovery path
         });
 
         return true;
