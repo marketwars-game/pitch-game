@@ -2,7 +2,7 @@
 // FILE: src/components/solo/WelcomeScreen.tsx
 // PROJECT: pitch-game
 // TASK: T6 — Solo Mode
-// VERSION: T6-v3
+// VERSION: T6-v4
 // CREATED: 2026-05-09
 // PURPOSE: Cinematic landing — adapted from T4 PresenterLandingScreen for
 //          mobile portrait. Animation timeline:
@@ -11,23 +11,30 @@
 //          - 1.4-2.3s: 4-word title rises (AI · Stock · Pitch · Battle)
 //                     "Battle" has gradient mint→blue→pink + glow
 //          - 2.8s: tagline fades up
-//          - 3.2s: form (input + button) fades up
+//          - 3.2s: form (input + button + leaderboard link) fades up
 //          - 3.6s: footnote fades up
 //          - Loop: halo spin 8s, pulse rings 4s × 3 stagger, sweep 7s, particles 6-10s
 //
 // Logo: uses /dime-d.png from public folder (added in T4).
 //
 // CHANGE LOG:
+//   T6-v4 (2026-05-09): + Leaderboard button (outline style) below "เริ่มเลย"
+//                        for users who want to check scores without playing.
+//                        - Uses next/link href="/board" for client-side nav
+//                        - Outline style (transparent bg + mint border)
+//                          to maintain primary action hierarchy
+//                        - Strong selectors (a.welcome-btn-secondary:link/visited)
+//                          + !important to override Next.js Link base styles
 //   T6-v3 (2026-05-09): UI fix — add box-sizing: border-box to .welcome-input
 //                        and .welcome-btn so their 14px+16px padding doesn't
 //                        push width beyond the 320px .welcome-form container.
-//                        Result: input and button now visually identical width.
 //   T6-v1 (2026-05-09): Initial — matches MEXPO26-PITCH-GAME-T6-mockup-v3
 // =====================================================
 
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { NICKNAME_MAX_LENGTH } from '@/lib/types';
 
 type Props = {
@@ -123,6 +130,9 @@ export function WelcomeScreen({ initialNickname, onStart }: Props) {
           >
             เริ่มเลย →
           </button>
+          <Link href="/board" className="welcome-btn-secondary">
+            🏆 ดู Leaderboard
+          </Link>
           <div className="welcome-footnote">FREE · NO SIGNUP · UNLIMITED PLAYS</div>
         </div>
       </div>
@@ -413,6 +423,37 @@ export function WelcomeScreen({ initialNickname, onStart }: Props) {
         .welcome-btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        .welcome-btn-secondary,
+        a.welcome-btn-secondary,
+        a.welcome-btn-secondary:link,
+        a.welcome-btn-secondary:visited {
+          display: block;
+          width: 100%;
+          box-sizing: border-box;
+          margin-top: 10px;
+          padding: 12px 16px;
+          border-radius: 10px;
+          border: 1px solid rgba(93,245,145,0.35);
+          background: transparent;
+          color: #5DF591 !important;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          text-align: center;
+          text-decoration: none !important;
+          font-family: inherit;
+          transition: all 0.2s;
+          cursor: pointer;
+        }
+        a.welcome-btn-secondary:hover {
+          background: rgba(93,245,145,0.06);
+          border-color: rgba(93,245,145,0.55);
+          transform: translateY(-1px);
+        }
+        a.welcome-btn-secondary:active {
+          transform: translateY(0);
         }
 
         .welcome-footnote {
