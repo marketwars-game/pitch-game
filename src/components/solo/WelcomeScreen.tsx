@@ -2,7 +2,7 @@
 // FILE: src/components/solo/WelcomeScreen.tsx
 // PROJECT: pitch-game
 // TASK: T6 — Solo Mode
-// VERSION: T6-v1
+// VERSION: T6-v3
 // CREATED: 2026-05-09
 // PURPOSE: Cinematic landing — adapted from T4 PresenterLandingScreen for
 //          mobile portrait. Animation timeline:
@@ -18,6 +18,10 @@
 // Logo: uses /dime-d.png from public folder (added in T4).
 //
 // CHANGE LOG:
+//   T6-v3 (2026-05-09): UI fix — add box-sizing: border-box to .welcome-input
+//                        and .welcome-btn so their 14px+16px padding doesn't
+//                        push width beyond the 320px .welcome-form container.
+//                        Result: input and button now visually identical width.
 //   T6-v1 (2026-05-09): Initial — matches MEXPO26-PITCH-GAME-T6-mockup-v3
 // =====================================================
 
@@ -356,6 +360,7 @@ export function WelcomeScreen({ initialNickname, onStart }: Props) {
 
         .welcome-input {
           width: 100%;
+          box-sizing: border-box;
           padding: 14px 16px;
           border-radius: 10px;
           border: 1px solid rgba(255,255,255,0.18);
@@ -383,6 +388,7 @@ export function WelcomeScreen({ initialNickname, onStart }: Props) {
 
         .welcome-btn {
           width: 100%;
+          box-sizing: border-box;
           padding: 14px 16px;
           border-radius: 10px;
           border: 1px solid rgba(93,245,145,0.4);

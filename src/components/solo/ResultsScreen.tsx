@@ -2,13 +2,23 @@
 // FILE: src/components/solo/ResultsScreen.tsx
 // PROJECT: pitch-game
 // TASK: T6 — Solo Mode
-// VERSION: T6-v1
+// VERSION: T6-v2
 // CREATED: 2026-05-09
 // PURPOSE: Final score (gradient mint→blue) + rank pill + pitch echo +
-//          3 judge cards + 3 actions (ดู Leaderboard / แชร์ FB / เล่นอีกครั้ง).
+//          3 judge cards + 2 actions (ดู Leaderboard / เล่นอีกครั้ง) +
+//          screenshot share hint.
 //          Failed state: shows fallback message + "เล่นอีกครั้ง" button only.
 //
 // CHANGE LOG:
+//   T6-v2 (2026-05-09): Remove Facebook share button — Facebook deprecated the
+//                        `quote` parameter, so previews would just show generic
+//                        OG tags (not user's actual score). Better UX: let users
+//                        screenshot manually for authentic share. Also:
+//                        - Remove buildFacebookShareUrl import + handleShareFB
+//                        - Remove FacebookIcon component
+//                        - Remove .btn-fb CSS
+//                        - Add .share-hint note nudging screenshot share
+//                        - Add box-sizing: border-box to .btn (consistency)
 //   T6-v1 (2026-05-09): Initial — matches MEXPO26-PITCH-GAME-T6-mockup-v3
 // =====================================================
 
@@ -16,7 +26,7 @@
 
 import { useRouter } from 'next/navigation';
 import type { SubmissionScores } from '@/lib/types';
-import { formatScore, buildFacebookShareUrl } from '@/lib/solo-utils';
+import { formatScore } from '@/lib/solo-utils';
 
 type Props = {
   pitch: string;
@@ -28,12 +38,6 @@ type Props = {
 export function ResultsScreen({ pitch, scores, rank, onReplay }: Props) {
   const router = useRouter();
   const failed = !scores || scores.finalScore == null;
-
-  const handleShareFB = () => {
-    if (failed || scores?.finalScore == null) return;
-    const url = buildFacebookShareUrl(scores.finalScore);
-    window.open(url, '_blank', 'noopener,noreferrer,width=600,height=500');
-  };
 
   const handleViewBoard = () => {
     router.push('/board');
@@ -102,13 +106,12 @@ export function ResultsScreen({ pitch, scores, rank, onReplay }: Props) {
               <button type="button" className="btn btn-primary" onClick={handleViewBoard}>
                 ดู Leaderboard 🏆
               </button>
-              <button type="button" className="btn btn-fb" onClick={handleShareFB}>
-                <FacebookIcon />
-                แชร์คะแนนใน Facebook
-              </button>
               <button type="button" className="btn btn-secondary" onClick={onReplay}>
                 เล่นอีกครั้ง
               </button>
+              <div className="share-hint">
+                💡 อยากแชร์คะแนน? screenshot หน้านี้ไปโพสต์ Facebook ได้เลย
+              </div>
             </div>
           </>
         )}
@@ -236,6 +239,7 @@ export function ResultsScreen({ pitch, scores, rank, onReplay }: Props) {
           cursor: pointer;
           font-family: inherit;
           transition: all 0.15s;
+          box-sizing: border-box;
         }
         .btn-primary {
           background: #5DF591;
@@ -248,15 +252,19 @@ export function ResultsScreen({ pitch, scores, rank, onReplay }: Props) {
           border: 1px solid rgba(255,255,255,0.16);
         }
         .btn-secondary:hover { background: rgba(255,255,255,0.10); }
-        .btn-fb {
-          background: linear-gradient(135deg, #1877f2, #0d5fcb);
-          color: #fff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
+
+        .share-hint {
+          margin-top: 6px;
+          padding: 12px 14px;
+          background: rgba(93,245,145,0.06);
+          border: 1px dashed rgba(93,245,145,0.25);
+          border-radius: 10px;
+          font-size: 12px;
+          color: #A1A1AA;
+          text-align: center;
+          line-height: 1.5;
+          box-sizing: border-box;
         }
-        .btn-fb:hover { filter: brightness(1.1); }
       `}</style>
     </div>
   );
@@ -349,14 +357,6 @@ function JudgeCard({ kind, name, trait, score, comment }: JudgeCardProps) {
         .judge-score-communicator { color: #FF5C8A; }
       `}</style>
     </div>
-  );
-}
-
-function FacebookIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-    </svg>
   );
 }
 

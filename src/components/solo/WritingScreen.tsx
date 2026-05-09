@@ -2,13 +2,17 @@
 // FILE: src/components/solo/WritingScreen.tsx
 // PROJECT: pitch-game
 // TASK: T6 — Solo Mode
-// VERSION: T6-v1
+// VERSION: T6-v2
 // CREATED: 2026-05-09
 // PURPOSE: 4-min countdown + challenge box (Pitch ให้ลูกฟัง · 50 บาท) + textarea.
 //          Auto-submits at 0:00 (even with empty pitch).
 //          Local timer (not server-driven — solo flow has no server-side game state).
 //
 // CHANGE LOG:
+//   T6-v2 (2026-05-09): UI fix — add box-sizing: border-box to .textarea, .btn,
+//                        and .challenge-box so their padding doesn't expand width
+//                        beyond the .writing-scroll container. Result: all 3
+//                        controls now visually aligned at the same width.
 //   T6-v1 (2026-05-09): Initial — matches MEXPO26-PITCH-GAME-T6-mockup-v3
 // =====================================================
 
@@ -218,6 +222,8 @@ export function WritingScreen({ onSubmit }: Props) {
         /* ========== Challenge box ========== */
         .challenge-box {
           position: relative;
+          width: 100%;
+          box-sizing: border-box;
           margin-bottom: 16px;
           padding: 18px 16px;
           border-radius: 14px;
@@ -277,6 +283,7 @@ export function WritingScreen({ onSubmit }: Props) {
 
         .textarea {
           width: 100%;
+          box-sizing: border-box;
           height: 200px;
           padding: 12px;
           border-radius: 10px;
@@ -306,6 +313,7 @@ export function WritingScreen({ onSubmit }: Props) {
 
         .btn {
           width: 100%;
+          box-sizing: border-box;
           padding: 14px 16px;
           border-radius: 10px;
           border: none;

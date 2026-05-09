@@ -2,7 +2,7 @@
 // FILE: src/components/board/BoardView.tsx
 // PROJECT: pitch-game
 // TASK: T6 — Solo Mode
-// VERSION: T6-v1
+// VERSION: T6-v2
 // CREATED: 2026-05-09
 // PURPOSE: Public leaderboard for /board.
 //          - Header + CTA "เล่นเลย" linking to /try
@@ -14,6 +14,16 @@
 //          - Empty state with CTA
 //
 // CHANGE LOG:
+//   T6-v2 (2026-05-09): UI fixes:
+//                       1. .board-scroll: + box-sizing border-box + overflow-x hidden
+//                          (was overflowing parent due to padding 20px without border-box)
+//                       2. .board-cta: stronger selector (a.board-cta:link/visited) +
+//                          !important on color/text-decoration to override Next.js Link
+//                          base style. Also added shadow + hover lift for depth.
+//                       3. .board-row: tighter grid (32px rank + 10px gap), + box-sizing
+//                          + min-width 0; .board-score min-width 36px (was 40px) so
+//                          number "7.3" no longer truncates on 360px screens.
+//                       4. .board-load-more: + box-sizing border-box.
 //   T6-v1 (2026-05-09): Initial — matches MEXPO26-PITCH-GAME-T6-mockup-v3
 // =====================================================
 
@@ -143,11 +153,13 @@ export function BoardView() {
         .board-scroll {
           position: relative;
           z-index: 2;
+          box-sizing: border-box;
           padding: 20px;
           max-width: 600px;
           margin: 0 auto;
           width: 100%;
           overflow-y: auto;
+          overflow-x: hidden;
           flex: 1;
         }
 
@@ -176,20 +188,28 @@ export function BoardView() {
           letter-spacing: -0.5px;
           margin: 0;
         }
-        .board-cta {
+        .board-cta,
+        a.board-cta,
+        a.board-cta:link,
+        a.board-cta:visited {
           background: #5DF591;
-          color: #062b13;
-          padding: 8px 14px;
+          color: #062b13 !important;
+          padding: 10px 16px;
           border-radius: 999px;
-          font-size: 12px;
-          font-weight: 700;
+          font-size: 13px;
+          font-weight: 800;
           border: none;
           cursor: pointer;
           white-space: nowrap;
-          text-decoration: none;
+          text-decoration: none !important;
           display: inline-block;
+          flex-shrink: 0;
+          letter-spacing: 0.3px;
+          box-shadow: 0 2px 12px rgba(93,245,145,0.25);
+          transition: all 0.15s;
         }
-        .board-cta:hover { background: #1ED15F; }
+        a.board-cta:hover { background: #1ED15F; transform: translateY(-1px); }
+        a.board-cta:active { transform: translateY(0); }
 
         /* ========== Stats ========== */
         .board-stats {
@@ -255,8 +275,8 @@ export function BoardView() {
         /* ========== Rows ========== */
         .board-row {
           display: grid;
-          grid-template-columns: 36px 1fr auto auto;
-          gap: 12px;
+          grid-template-columns: 32px 1fr auto auto;
+          gap: 10px;
           padding: 12px 14px;
           align-items: center;
           border-radius: 10px;
@@ -264,6 +284,9 @@ export function BoardView() {
           background: rgba(255,255,255,0.02);
           border: 1px solid transparent;
           transition: all 0.15s;
+          box-sizing: border-box;
+          width: 100%;
+          min-width: 0;
         }
         .board-row.gold {
           background: linear-gradient(90deg, rgba(255,217,61,0.10), rgba(255,217,61,0.02));
@@ -310,7 +333,8 @@ export function BoardView() {
           font-variant-numeric: tabular-nums;
           text-align: right;
           letter-spacing: -0.3px;
-          min-width: 40px;
+          min-width: 36px;
+          flex-shrink: 0;
         }
         .board-row.gold .board-score { color: #FFD93D; }
 
@@ -318,6 +342,7 @@ export function BoardView() {
         .board-load-more {
           margin-top: 14px;
           width: 100%;
+          box-sizing: border-box;
           padding: 12px;
           border-radius: 10px;
           background: rgba(255,255,255,0.04);
