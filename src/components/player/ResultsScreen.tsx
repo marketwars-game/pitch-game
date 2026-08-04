@@ -2,7 +2,7 @@
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// VERSION: T7-v2
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-08-04
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
@@ -11,6 +11,10 @@
 //   คำนวณ rank โดย POLL submissions ทุก 5 วินาที (T5-v4: เปลี่ยนจาก realtime)
 //
 // CHANGE LOG:
+//   T7-v2 (2026-08-04): คะแนนรวมของผู้เล่นแสดง 2 ทศนิยม (เดิม 1)
+//                       เพื่อให้ตรงกับ podium บนจอใหญ่และหน้า admin
+//                       ผู้เล่นจะได้ไม่สงสัยว่าทำไมตัวเองกับเพื่อนคะแนนเท่ากัน
+//                       แต่อันดับไม่เท่ากัน · คะแนนรายกรรมการยังเป็น 1 ทศนิยม
 //   T7-v1 (2026-08-04): องก์ 1 + ชื่อกรรมการใหม่ + เรียงอันดับผ่าน ranking.ts
 //                        - เพิ่มบล็อกแชท "พี่เก่งตอบกลับแล้ว" ไว้เหนือคะแนน
 //                          (ข้อความของผู้เล่น → ข้อความพี่เก่ง อ่านเป็นบทสนทนา)
@@ -48,7 +52,7 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import type { SubmissionRow } from '@/lib/types';
-import { compareRank, resolveFinalScore } from '@/lib/ranking';
+import { compareRank, resolveFinalScore, formatScoreCompare } from '@/lib/ranking';
 import {
   ChatSurface,
   KengBubble,
@@ -247,7 +251,7 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            {finalScore !== null ? finalScore.toFixed(1) : '—'}
+            {formatScoreCompare(finalScore)}
           </span>
           <span
             style={{

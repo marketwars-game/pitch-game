@@ -2,7 +2,7 @@
 // FILE: src/components/admin/PlayerRow.tsx
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v2
+// VERSION: T7-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Single player row in PlayerStatusList
@@ -10,6 +10,8 @@
 //          Optional rank emoji (🥇🥈🥉) for top 3 at RESULTS phase
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): แสดงคะแนน 2 ทศนิยม — จอนี้ MC ใช้เทียบอันดับกัน
+//                       ถ้าโชว์ 1 ตำแหน่งจะเห็น 8.0 เท่ากันทั้งที่จริงเป็น 8.03 กับ 7.97
 //   T2-v2 (2026-05-06): Add showRankEmoji prop
 //                        - Top 3 (idx 1-3): emoji 🥇🥈🥉
 //                        - 4+: เลข #4, #5, ...
@@ -146,7 +148,7 @@ export function PlayerRow({
             fontVariantNumeric: 'tabular-nums',
           }}
         >
-          {finalScore !== undefined ? finalScore.toFixed(1) : '—'}
+          {finalScore !== undefined ? finalScore.toFixed(2) : '—'}
         </div>
       )}
       <div style={{ ...cellStyle, justifyContent: 'flex-end' }}>
