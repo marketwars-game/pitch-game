@@ -1,13 +1,24 @@
 // =====================================================
 // FILE: src/lib/types.ts
 // PROJECT: pitch-game
-// TASK: T6 — Solo Mode (/try + /board)
-// VERSION: T6-v1
+// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
+// VERSION: T7-v2
 // CREATED: 2026-05-05
-// LAST MODIFIED: 2026-05-09
+// LAST MODIFIED: 2026-08-04
 // PURPOSE: Database & domain types — share กันระหว่าง client + server
 //
 // CHANGE LOG:
+//   T7-v2 (2026-08-04): คอมเมนต์ JudgeScore.reply — persona creative คือ "พี่เก่ง"
+//                       (ไม่มีการเปลี่ยน type ใดๆ)
+//   T7-v1 (2026-08-04): T7 — เปลี่ยนโจทย์จาก "หุ้น" เป็น "เคสพี่เก่ง"
+//                       + CaseData (โจทย์รูปแบบใหม่ — เก็บใน games.stock jsonb เดิม)
+//                       + ToolItem (เครื่องมือการเงิน 7 ชิ้นจากคลาส)
+//                       + JudgeScore.reply (ข้อความพี่เก่งตอบกลับ — เฉพาะ creative)
+//                       ~ GameRow.stock: StockData | null → CaseData | null
+//                         (คอลัมน์เดิม ไม่มี migration — เปลี่ยนแค่รูปร่าง jsonb)
+//                       ~ DEFAULT_GAME_CONFIG: writingTime 240→300, minLength 50→80
+//                       ~ SubmissionScores.finalScore: 1 → 2 ทศนิยม (ใช้ตัดสินอันดับ)
+//                       StockData คงไว้ ไม่ลบ (ตาม Shared-file Overwrite Protocol §8.5)
 //   T6-v1 (2026-05-09): + SoloSubmissionRow row type (judging_status reuses
 //                         existing JudgingStatus union; SoloJudgingStatus is
 //                         a re-export alias for ergonomic imports)
@@ -50,10 +61,32 @@ export type StockData = {
 };
 
 // =====================================================
+// Case Data (T7) — โจทย์รูปแบบใหม่ "พี่เก่ง"
+// =====================================================
+// เก็บในคอลัมน์ games.stock (jsonb) เดิม — ไม่มี migration
+export type CaseData = {
+  id: string;         // 'keng'
+  name: string;       // 'พี่เก่ง'
+  age: number;        // 42
+  headline: string;   // ประโยคติดปาก (โชว์บนจอใหญ่)
+  facts: string[];    // ข้อมูลประกอบ (โชว์บนจอใหญ่)
+  chat: string[];     // บับเบิลแชทของพี่เก่ง (หน้าเขียนบนมือถือ)
+  rules: string[];    // กติกาการตอบ
+};
+
+// เครื่องมือการเงินจากคลาส — ใช้ร่วมกันระหว่าง UI กับ judge prompt
+export type ToolItem = {
+  id: string;
+  name: string;      // ชื่อบนชิป
+  short: string;     // นิยามสั้นที่ผู้เล่นเห็น
+  judgeDef: string;  // นิยามที่ฝังใน system prompt ของ The Professor
+};
+
+// =====================================================
 // Game Config
 // =====================================================
 export type GameConfig = {
-  writingTimeSeconds: number;  // 240 = 4 นาที
+  writingTimeSeconds: number;  // T7: 300 = 5 นาที
   pitchMinLength: number;      // ขั้นต่ำ — ปุ่ม submit disabled ถ้าน้อยกว่านี้
   pitchMaxLength: number;      // สูงสุด — hard block keystroke ที่ความยาวนี้
   primaryColor?: string;
@@ -64,15 +97,17 @@ export type GameConfig = {
 // AI Judge Score
 // =====================================================
 export type JudgeScore = {
-  score: number;     // 0-10 (0 = auto-default)
+  score: number;     // 0.0-10.0 ทศนิยม 1 ตำแหน่ง (0 = auto-default)
+                     // T7: AI ให้ 0-100 แล้ว /api/judge หารสิบก่อนเก็บ
   comment: string;   // 1-2 ประโยค ภาษาไทย
+  reply?: string;    // T7 — ข้อความพี่เก่งตอบกลับ (เฉพาะ persona creative = พี่เก่ง)
 };
 
 export type SubmissionScores = {
   analyst?: JudgeScore;
   creative?: JudgeScore;
   communicator?: JudgeScore;
-  finalScore?: number;  // ค่าเฉลี่ย ทศนิยม 1 ตำแหน่ง
+  finalScore?: number;  // T7: ค่าเฉลี่ย ทศนิยม 2 ตำแหน่ง (แสดง 1 ตำแหน่งบนมือถือ / 2 บน podium)
   rank?: number;
 };
 
@@ -96,7 +131,7 @@ export type SoloJudgingStatus = JudgingStatus;
 export type GameRow = {
   id: string;
   phase: GamePhase;
-  stock: StockData | null;
+  stock: CaseData | null;        // T7 — คอลัมน์เดิม รูปร่างใหม่
   config: GameConfig | null;
   writing_started_at: string | null;
   writing_ends_at: string | null;
@@ -188,8 +223,8 @@ export const NICKNAME_MAX_LENGTH = 20;
 
 // Default config fallback (ใช้ตอน game.config เป็น null ใน DB)
 export const DEFAULT_GAME_CONFIG: GameConfig = {
-  writingTimeSeconds: 240,
-  pitchMinLength: 50,
+  writingTimeSeconds: 300,  // T7: 5 นาที (เดิม 240)
+  pitchMinLength: 80,       // T7: กันข้อความสั้นจนกรรมการให้คะแนนไม่ได้ (เดิม 50)
   pitchMaxLength: 1500,
 };
 

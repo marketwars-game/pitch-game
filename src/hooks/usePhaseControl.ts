@@ -2,7 +2,7 @@
 // FILE: src/hooks/usePhaseControl.ts
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v2
+// VERSION: T7-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Phase control actions for Admin Panel
@@ -13,6 +13,8 @@
 //          - applyStock: UPDATE games.stock (ใช้ตอน LOBBY)
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): applyStock รับ CaseData แทน StockData (ผลจากการเปลี่ยน
+//                       รูปร่าง games.stock ใน T7) — ตรรกะ phase control ไม่เปลี่ยน
 //   T2-v2 (2026-05-06): Pivot to single-round model
 //                        - startNextRound() = FULL RESET (delete players + submissions)
 //                        - ไม่ +1 round_number อีก (อยู่ที่ 1 ตลอด)
@@ -31,7 +33,7 @@ import {
   DEFAULT_GAME_CONFIG,
   type GameConfig,
   type GameRow,
-  type StockData,
+  type CaseData,
 } from '@/lib/types';
 
 export interface UsePhaseControlResult {
@@ -41,7 +43,7 @@ export interface UsePhaseControlResult {
   closeWriting: () => Promise<void>;
   revealResults: (autoDefaultSubmissionIds: string[]) => Promise<void>;
   startNextRound: () => Promise<void>;
-  applyStock: (stock: StockData) => Promise<void>;
+  applyStock: (stock: CaseData) => Promise<void>;
 }
 
 /**
@@ -209,7 +211,7 @@ export function usePhaseControl(game: GameRow | null): UsePhaseControlResult {
   // Apply stock (LOBBY only)
   // ============================================================
   const applyStock = useCallback(
-    async (stock: StockData) =>
+    async (stock: CaseData) =>
       wrap(async () => {
         if (!game) return;
         const supabase = getSupabaseBrowserClient();

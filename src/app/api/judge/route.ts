@@ -1,10 +1,10 @@
 // =====================================================
 // FILE: src/app/api/judge/route.ts
 // PROJECT: pitch-game
-// TASK: T5 — Judge Fix (Tool Use)
-// VERSION: T5-v2
+// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
+// VERSION: T7-v2
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-05-07
+// LAST MODIFIED: 2026-08-04
 // PURPOSE: POST /api/judge — รับ submissionId → ยิง 3 personas parallel → UPDATE scores
 //   - Streaming model: ถูกเรียกทันทีหลัง player submit (fire-and-forget)
 //   - Idempotent: ถ้า submission.judging_status='done' แล้ว → skip
@@ -15,6 +15,16 @@
 // Response: { ok: true, status: 'done' | 'failed', personas_succeeded: number }
 //
 // CHANGE LOG:
+//   T7-v2 (2026-08-04): กรรมการคนที่ 2 = "พี่เก่ง" (คอมเมนต์ + fallback text)
+//                       ตรรกะคะแนน/การเก็บ reply ไม่เปลี่ยน
+//   T7-v1 (2026-08-04): จุดแปลงหน่วยคะแนน 0-100 → 0.0-10.0 อยู่ที่ไฟล์นี้ที่เดียว
+//                        - toScore10(): หาร 10 ก่อนเก็บลง jsonb
+//                          ทำให้ทุกหน้าจอที่แสดง `/10` + toFixed(1) ใช้ได้เหมือนเดิม
+//                        - calcFinalScore: ทศนิยม 1 → 2 ตำแหน่ง (ใช้ตัดสินอันดับ)
+//                        - เก็บ scores.creative.reply (ข้อความพี่เก่งตอบกลับ)
+//                          + FALLBACK_REPLY ถ้าพี่เก่งไม่ส่ง reply มา
+//                        - FALLBACK_COMMENTS เปลี่ยนชื่อกรรมการเป็น T7
+//                        - stock → CaseData
 //   T5-v2 (2026-05-07): Adapted to Tool Use callJudge signature
 //                        - callJudge now returns JudgeResponse directly (no parse step)
 //                        - Removed parseJudgeResponse import (no longer exported)
@@ -35,7 +45,7 @@ import { callJudge, type JudgeResponse } from '@/lib/anthropic';
 import type {
   Database,
   SubmissionRow,
-  StockData,
+  CaseData,
   SubmissionScores,
 } from '@/lib/types';
 
@@ -60,10 +70,23 @@ function getServerSupabase() {
 // Fallback comments (เมื่อ persona ตัวนึงพังหมด)
 // =====================================================
 const FALLBACK_COMMENTS: Record<PersonaKey, string> = {
-  analyst: 'พี่ Analyst ขออนุญาตเข้าห้องน้ำสักครู่ — กรรมการอีก 2 ท่านตัดสินแทน',
-  creative: 'พี่ Creative ติดวาดรูปอยู่ครับ — รอบนี้ฟัง 2 ท่านแทน',
-  communicator: 'พี่ Communicator ติดสาย call สำคัญ — กรรมการอีก 2 ท่านลงคะแนนแทน',
+  analyst: 'อาจารย์ติดสอนคลาสถัดไป — รอบนี้กรรมการอีก 2 ท่านตัดสินแทน',
+  creative: 'พี่เก่งกำลังยุ่งอยู่ ยังไม่ได้เปิดอ่าน — รอบนี้ฟัง 2 ท่านแทน',
+  communicator: 'กรรมการท่านนี้ติดสายอยู่ — อีก 2 ท่านลงคะแนนแทน',
 };
+
+// T7 — ใช้เมื่อพี่เก่งตัดสินสำเร็จแต่ไม่ได้ส่ง reply มา (field optional)
+// องก์ 1 ของการเฉลยต้องมีข้อความเสมอ ห้ามปล่อยจอว่าง
+const FALLBACK_REPLY =
+  'พี่อ่านแล้วนะ ขอเก็บไปคิดก่อน เดี๋ยวพี่มาคุยต่อ 🙏';
+
+// =====================================================
+// T7 — แปลงสเกลคะแนน 0-100 (จาก AI) → 0.0-10.0 (เก็บลง DB)
+// =====================================================
+// จุดแปลงหน่วยอยู่ที่นี่ที่เดียว หน้าจอทุกหน้าที่แสดง `/ 10` ไม่ต้องแก้
+function toScore10(raw: number): number {
+  return Math.round(raw) / 10;
+}
 
 // =====================================================
 // Run one persona — return null if all retries fail
@@ -97,8 +120,9 @@ function calcFinalScore(
     (r): r is JudgeResponse => r !== null
   );
   if (valid.length === 0) return 0;
-  const sum = valid.reduce((acc, r) => acc + r.score, 0);
-  return Math.round((sum / valid.length) * 10) / 10;
+  // T7: เฉลี่ยจากคะแนนที่แปลงเป็นสเกล 10 แล้ว เก็บ 2 ทศนิยมเพื่อใช้ตัดสินอันดับ
+  const sum = valid.reduce((acc, r) => acc + toScore10(r.score), 0);
+  return Math.round((sum / valid.length) * 100) / 100;
 }
 
 // =====================================================
@@ -172,12 +196,12 @@ export async function POST(request: Request) {
 
   if (gameError || !game || !game.stock) {
     return NextResponse.json(
-      { ok: false, error: 'Game stock not configured' },
+      { ok: false, error: 'Game case not configured' },
       { status: 400 }
     );
   }
 
-  const stock = game.stock as StockData;
+  const caseData = game.stock as CaseData;
 
   // 4. Mark in_progress
   const { error: markError } = await supabase
@@ -191,7 +215,7 @@ export async function POST(request: Request) {
   }
 
   // 5. Build user message + run 3 personas in parallel
-  const userMessage = buildUserMessage(stock, sub.pitch);
+  const userMessage = buildUserMessage(caseData, sub.pitch);
   const [analystResult, creativeResult, communicatorResult] = await Promise.all([
     runPersona('analyst', userMessage),
     runPersona('creative', userMessage),
@@ -216,10 +240,21 @@ export async function POST(request: Request) {
   for (const key of PERSONA_KEYS) {
     const r = results[key];
     if (r !== null) {
-      scores[key] = { score: r.score, comment: r.comment };
+      // T7: แปลง 0-100 → 0.0-10.0 ตรงนี้
+      scores[key] = { score: toScore10(r.score), comment: r.comment };
+      // T7: เฉพาะ creative (พี่เก่ง) — ข้อความตอบกลับ (องก์ 1 ของการเฉลย)
+      if (key === 'creative') {
+        scores[key] = {
+          ...scores[key],
+          reply: r.reply ?? FALLBACK_REPLY,
+        };
+      }
     } else {
       // Fallback — แสดงให้ user รู้ว่า persona นี้ล่ม
       scores[key] = { score: 0, comment: FALLBACK_COMMENTS[key] };
+      if (key === 'creative') {
+        scores[key] = { ...scores[key], reply: FALLBACK_REPLY };
+      }
     }
   }
 

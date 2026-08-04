@@ -1,10 +1,10 @@
 // =====================================================
 // FILE: src/lib/anthropic.ts
 // PROJECT: pitch-game
-// TASK: T5 — Judge Fix (Tool Use)
-// VERSION: T5-v2
+// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
+// VERSION: T7-v2
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-05-07
+// LAST MODIFIED: 2026-08-04
 // PURPOSE: Anthropic SDK client + retry helper + Tool Use forced JSON
 //   - Singleton client (reuse across requests)
 //   - Retry with exponential backoff + jitter for 429/529
@@ -12,6 +12,16 @@
 //   - ✨ T5-v2: Tool Use forced (tool_choice='tool') — guarantee JSON shape
 //
 // CHANGE LOG:
+//   T7-v2 (2026-08-04): เปลี่ยนคำอธิบาย field reply — กรรมการคนที่ 2 คือ "พี่เก่ง"
+//                       ไม่ใช่ "The Skeptic" (ตรรกะไม่เปลี่ยน)
+//   T7-v1 (2026-08-04): สเกลคะแนน 1-10 → 0-100 (แก้ปัญหาคะแนนตันเท่ากันตอนคนเยอะ)
+//                        - SUBMIT_JUDGMENT_TOOL: score integer 0-100
+//                        - เพิ่ม field `reply` (optional) — ข้อความพี่เก่งตอบกลับ
+//                          ใช้เฉพาะ persona creative (พี่เก่ง)
+//                        - clampScore: 1-10 → 0-100
+//                        - JudgeResponse เพิ่ม reply?: string
+//                        หมายเหตุ: /api/judge เป็นผู้หาร 10 ก่อนเก็บลง DB
+//                        ค่าที่ไหลออกจากไฟล์นี้ยังเป็นสเกล 0-100
 //   T5-v2 (2026-05-07): Migrate to Tool Use to fix "No JSON object found" failures
 //                        - Add SUBMIT_JUDGMENT_TOOL schema (score 1-10 + comment)
 //                        - tool_choice: {type:'tool', name:'submit_judgment'} (forced)
@@ -57,14 +67,22 @@ const SUBMIT_JUDGMENT_TOOL: Anthropic.Tool = {
     properties: {
       score: {
         type: 'integer',
-        minimum: 1,
-        maximum: 10,
-        description: 'คะแนน 1-10 ตามเกณฑ์ของคาแรกเตอร์กรรมการ',
+        minimum: 0,
+        maximum: 100,
+        description:
+          'คะแนน 0-100 ตามเกณฑ์และช่วงคะแนนของคาแรกเตอร์กรรมการ ' +
+          'ห้ามลงท้ายด้วย 0 หรือ 5 — ให้เลขที่เจาะจง เช่น 83, 78, 91, 64',
       },
       comment: {
         type: 'string',
         description:
           'คอมเมนต์ภาษาไทย 1-2 ประโยค ตามคาแรกเตอร์ที่กำหนด ห้ามเกิน 2 ประโยค',
+      },
+      reply: {
+        type: 'string',
+        description:
+          'เฉพาะพี่เก่ง — ข้อความที่พี่เก่งพิมพ์ตอบกลับในไลน์ 1-2 ประโยค ภาษาพูด ' +
+          'กรรมการคนอื่นไม่ต้องส่ง field นี้',
       },
     },
     required: ['score', 'comment'],
@@ -147,8 +165,9 @@ function calcDelayMs(attempt: number, retryAfter?: number): number {
 // JudgeResponse type (parsed)
 // =====================================================
 export type JudgeResponse = {
-  score: number;
+  score: number;      // T7: สเกล 0-100 (ยังไม่หาร 10 — /api/judge เป็นคนหาร)
   comment: string;
+  reply?: string;     // T7: ข้อความพี่เก่งตอบกลับ (เฉพาะ persona พี่เก่ง)
 };
 
 // =====================================================
@@ -163,8 +182,8 @@ function clampScore(value: unknown): number {
   } else {
     throw new Error(`Score is not a number: ${JSON.stringify(value)}`);
   }
-  // Clamp 1-10 + round (defensive — schema enforces but belt + suspenders)
-  return Math.max(1, Math.min(10, Math.round(n)));
+  // T7: Clamp 0-100 + round (defensive — schema enforces but belt + suspenders)
+  return Math.max(0, Math.min(100, Math.round(n)));
 }
 
 function sanitizeComment(value: unknown): string {
@@ -246,9 +265,17 @@ export async function callJudge(params: {
         );
       }
 
+      // T7: reply เป็น optional — มีเฉพาะ persona พี่เก่ง
+      const rawReply = input.reply;
+      const reply =
+        typeof rawReply === 'string' && rawReply.trim().length > 0
+          ? rawReply.trim()
+          : undefined;
+
       return {
         score: clampScore(input.score),
         comment: sanitizeComment(input.comment),
+        ...(reply ? { reply } : {}),
       };
     } catch (err) {
       lastError = err;

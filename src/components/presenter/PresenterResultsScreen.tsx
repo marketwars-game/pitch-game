@@ -2,7 +2,7 @@
 // FILE: src/components/presenter/PresenterResultsScreen.tsx
 // PROJECT: pitch-game
 // TASK: T5 — End-to-End Test + Polish
-// VERSION: T5-v1
+// VERSION: T7-v1
 // CREATED: 2026-05-07
 // LAST MODIFIED: 2026-05-07
 // PURPOSE: RESULTS phase on Presenter
@@ -16,6 +16,7 @@
 // Skips submissions without finalScore (judging_status='failed' before AUTO_DEFAULT applied).
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): ใช้ชื่อเคสแทน ticker (การจัดอันดับ + 2 ทศนิยม ทำใน Batch 3)
 //   T5-v1 (2026-05-07): + gold-only confetti via canvas-confetti dynamic import
 //                        - Trigger on mount when ranked.length > 0
 //                        - 60 particles × 2 bursts at 1s and 4s
@@ -140,7 +141,7 @@ export function PresenterResultsScreen({ game, players, submissions }: Props) {
   const runners = ranked.slice(PODIUM_TOP_N, PODIUM_TOP_N + RUNNERS_TOP_N);
 
   const stock = game.stock;
-  const ticker = stock?.ticker ?? '—';
+  const ticker = stock?.name ?? '—';
   const totalPlayers = players.length;
 
   return (

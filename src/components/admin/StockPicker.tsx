@@ -1,26 +1,27 @@
 // =====================================================
 // FILE: src/components/admin/StockPicker.tsx
 // PROJECT: pitch-game
-// TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v1
+// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
+// VERSION: T7-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-05-06
-// PURPOSE: Stock dropdown + Apply button — used in LOBBY phase only
-//          Pulls from STOCK_PRESETS (T2: NVDA only, more added in T5)
-//          Shows current stock preview
+// LAST MODIFIED: 2026-08-04
+// PURPOSE: Case picker + Apply button — used in LOBBY phase only
+//          T7: เลือก "เคส" แทน "หุ้น" (ตอนนี้มีเคสเดียว: พี่เก่ง)
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): STOCK_PRESETS → CASE_PRESETS, props รับ CaseData
+//                       preview แสดงชื่อ/อายุ/ประโยคติดปาก แทน ticker/ราคา/YTD
 //   T2-v1 (2026-05-06): Initial
 // =====================================================
 'use client';
 
 import { useState } from 'react';
-import { STOCK_PRESETS } from '@/lib/stock-data';
-import type { StockData } from '@/lib/types';
+import { CASE_PRESETS } from '@/lib/stock-data';
+import type { CaseData } from '@/lib/types';
 
 export interface StockPickerProps {
-  currentStock: StockData | null;
-  onApply: (stock: StockData) => void | Promise<void>;
+  currentStock: CaseData | null;
+  onApply: (stock: CaseData) => void | Promise<void>;
   disabled?: boolean;
 }
 
@@ -29,20 +30,20 @@ export function StockPicker({
   onApply,
   disabled,
 }: StockPickerProps) {
-  const tickers = Object.keys(STOCK_PRESETS);
+  const caseIds = Object.keys(CASE_PRESETS);
   const [selected, setSelected] = useState<string>(
-    currentStock?.ticker ?? tickers[0] ?? ''
+    currentStock?.id ?? caseIds[0] ?? ''
   );
 
   const handleApply = () => {
-    const stock = STOCK_PRESETS[selected];
-    if (!stock) return;
-    onApply(stock);
+    const picked = CASE_PRESETS[selected];
+    if (!picked) return;
+    onApply(picked);
   };
 
   return (
     <>
-      <label style={labelStyle}>Stock Challenge</label>
+      <label style={labelStyle}>เคสของรอบนี้</label>
       <div
         style={{
           display: 'flex',
@@ -70,11 +71,11 @@ export function StockPicker({
               cursor: disabled ? 'not-allowed' : 'pointer',
             }}
           >
-            {tickers.map((t) => {
-              const s = STOCK_PRESETS[t];
+            {caseIds.map((id) => {
+              const c = CASE_PRESETS[id];
               return (
-                <option key={t} value={t}>
-                  {t} — {s.name}
+                <option key={id} value={id}>
+                  {c.name} · {c.age} ปี
                 </option>
               );
             })}
@@ -152,31 +153,19 @@ export function StockPicker({
                   letterSpacing: -0.3,
                 }}
               >
-                {currentStock.ticker} · {currentStock.exchange}
+                {currentStock.name} · {currentStock.age} ปี
               </div>
             </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ textAlign: 'right', flexShrink: 0, maxWidth: '55%' }}>
               <div
                 style={{
-                  fontSize: 18,
-                  fontWeight: 800,
-                  color: '#fff',
-                  letterSpacing: -0.3,
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {currentStock.price}
-              </div>
-              <div
-                style={{
-                  color: currentStock.ytdChange.startsWith('-')
-                    ? '#FF5C8A'
-                    : '#5DF591',
                   fontSize: 11,
-                  fontWeight: 700,
+                  color: '#A1A1AA',
+                  fontWeight: 600,
+                  lineHeight: 1.5,
                 }}
               >
-                {currentStock.ytdChange} YTD
+                “{currentStock.headline}”
               </div>
             </div>
           </div>
@@ -195,7 +184,7 @@ export function StockPicker({
             lineHeight: 1.5,
           }}
         >
-          ⚠️ ยังไม่ได้เลือก stock — กด Apply ก่อนเริ่มเกม
+          ⚠️ ยังไม่ได้เลือกเคส — กด Apply ก่อนเริ่มเกม
         </div>
       )}
     </>

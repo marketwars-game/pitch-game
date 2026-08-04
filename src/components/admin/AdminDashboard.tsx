@@ -2,7 +2,7 @@
 // FILE: src/components/admin/AdminDashboard.tsx
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v2
+// VERSION: T7-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Main admin panel after auth — orchestrates all sub-components
@@ -11,6 +11,7 @@
 //          - Provides phase control actions to children
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): ส่งชื่อเคส (game.stock.name) แทน ticker ให้ PlayerDetailModal
 //   T2-v2 (2026-05-06): Wire ConfirmResetModal for "เริ่มรอบใหม่"
 //                        startNextRound() เป็น destructive action
 //                        ต้อง confirm ก่อน — แสดงรายชื่อ player ที่จะถูกลบ
@@ -241,7 +242,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       {detailPlayer && (
         <PlayerDetailModal
           enriched={detailPlayer}
-          stockTicker={game.stock?.ticker ?? '—'}
+          stockTicker={game.stock?.name ?? '—'}
           roundNumber={game.round_number}
           onClose={() => setDetailPlayerId(null)}
         />
