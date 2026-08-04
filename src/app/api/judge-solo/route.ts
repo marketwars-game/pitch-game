@@ -2,7 +2,7 @@
 // FILE: src/app/api/judge-solo/route.ts
 // PROJECT: pitch-game
 // TASK: T6 — Solo Mode
-// VERSION: T6-v3
+// VERSION: T7-v1
 // CREATED: 2026-05-09
 // PURPOSE: POST /api/judge-solo — รับ submissionId → ยิง 3 personas parallel
 //          → UPDATE solo_submissions row scores
@@ -15,6 +15,12 @@
 // same fallback comments, same finalScore averaging.
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): ตามสเกลคะแนนใหม่ของ T7 (AI ให้ 0-100 → เก็บ 0.0-10.0)
+//                       - toScore10() เหมือน /api/judge · finalScore 2 ทศนิยม
+//                       - เก็บ reply ของพี่เก่ง + fallback
+//                       - ใช้ DEFAULT_CASE แทน STOCK_PRESETS (buildUserMessage รับ CaseData)
+//                       หมายเหตุ: /try ถูก redirect ไป /play ระหว่างงาน (try/page.tsx T7-v1)
+//                       ไฟล์นี้แก้เพื่อให้ build ผ่านและพร้อมใช้หลังงาน
 //   T6-v3 (2026-05-09): Refactor to mirror real /api/judge T5-v2:
 //                       - callJudge returns JudgeResponse (Tool Use, no parse step)
 //                       - runPersona catches errors, returns null on fail
@@ -33,7 +39,7 @@ import {
   type PersonaKey,
 } from '@/lib/judge-prompts';
 import { callJudge, type JudgeResponse } from '@/lib/anthropic';
-import { STOCK_PRESETS } from '@/lib/stock-data';
+import { DEFAULT_CASE } from '@/lib/stock-data';
 import type { SubmissionScores } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -47,6 +53,13 @@ type RequestBody = {
 // Fallback comments (when a persona's API calls all fail)
 // Same wording as /api/judge T5-v2 for consistency.
 // =====================================================
+// T7: แปลงสเกล 0-100 (จาก AI) → 0.0-10.0 (เก็บลง jsonb) — จุดเดียวกับ /api/judge
+function toScore10(raw: number): number {
+  return Math.round(raw) / 10;
+}
+
+const FALLBACK_REPLY = 'พี่อ่านแล้วนะ ขอเก็บไปคิดก่อน เดี๋ยวพี่มาคุยต่อ 🙏';
+
 const FALLBACK_COMMENTS: Record<PersonaKey, string> = {
   analyst: 'พี่ Analyst ขออนุญาตเข้าห้องน้ำสักครู่ — กรรมการอีก 2 ท่านตัดสินแทน',
   creative: 'พี่ Creative ติดวาดรูปอยู่ครับ — รอบนี้ฟัง 2 ท่านแทน',
@@ -85,8 +98,9 @@ function calcFinalScore(
     (r): r is JudgeResponse => r !== null
   );
   if (valid.length === 0) return 0;
-  const sum = valid.reduce((acc, r) => acc + r.score, 0);
-  return Math.round((sum / valid.length) * 10) / 10;
+  // T7: เฉลี่ยจากคะแนนที่แปลงเป็นสเกล 10 แล้ว เก็บ 2 ทศนิยม
+  const sum = valid.reduce((acc, r) => acc + toScore10(r.score), 0);
+  return Math.round((sum / valid.length) * 100) / 100;
 }
 
 // =====================================================
@@ -145,15 +159,7 @@ export async function POST(request: Request) {
     });
   }
 
-  // 3. Resolve stock context (PLTR locked for solo mode)
-  const stockTicker = sub.stock_ticker || 'PLTR';
-  const stock = STOCK_PRESETS[stockTicker] ?? STOCK_PRESETS.PLTR;
-  if (!stock) {
-    return NextResponse.json(
-      { ok: false, error: 'Stock preset not found' },
-      { status: 500 }
-    );
-  }
+  // 3. T7: โจทย์เป็นเคสเดียว (พี่เก่ง) — ไม่ต้อง resolve preset อีกแล้ว
 
   // 4. Mark in_progress
   const { error: markError } = await supabase
@@ -169,7 +175,7 @@ export async function POST(request: Request) {
 
   // 5. Build user message + run 3 personas in parallel
   const pitchText = sub.pitch || '(ผู้เล่นไม่ได้เขียน pitch)';
-  const userMessage = buildUserMessage(stock, pitchText);
+  const userMessage = buildUserMessage(DEFAULT_CASE, pitchText);
 
   const [analystResult, creativeResult, communicatorResult] = await Promise.all([
     runPersona('analyst', userMessage),
@@ -194,9 +200,15 @@ export async function POST(request: Request) {
   for (const key of PERSONA_KEYS) {
     const r = results[key];
     if (r !== null) {
-      scores[key] = { score: r.score, comment: r.comment };
+      scores[key] = { score: toScore10(r.score), comment: r.comment };
+      if (key === 'creative') {
+        scores[key] = { ...scores[key], reply: r.reply ?? FALLBACK_REPLY };
+      }
     } else {
       scores[key] = { score: 0, comment: FALLBACK_COMMENTS[key] };
+      if (key === 'creative') {
+        scores[key] = { ...scores[key], reply: FALLBACK_REPLY };
+      }
     }
   }
 

@@ -2,7 +2,7 @@
 // FILE: src/components/admin/PlayerStatusList.tsx
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v2
+// VERSION: T7-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Right panel — list all players with status pills
@@ -11,6 +11,7 @@
 //          - Each row clickable → open PlayerDetailModal
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): RESULTS phase เรียงด้วย compareRank (กติกาตัดสินเสมอเดียวกับจอใหญ่)
 //   T2-v2 (2026-05-06): Add ranking + sticky header
 //                        - RESULTS phase: sort by finalScore DESC
 //                        - Show rank column (🥇🥈🥉 emoji for top 3, #N for rest)
@@ -26,6 +27,7 @@ import type {
   PlayerStatusEnriched,
 } from '@/lib/types';
 import { PlayerRow } from './PlayerRow';
+import { compareRank } from '@/lib/ranking';
 
 export interface PlayerStatusListProps {
   phase: GamePhase;
@@ -48,16 +50,14 @@ export function PlayerStatusList({
   // T2-v2: Sort + rank ที่ RESULTS
   const orderedPlayers = useMemo(() => {
     if (!isResults) return enrichedPlayers;
-    // Sort by finalScore DESC, ส่วนที่ไม่มีคะแนนไปท้าย
-    return [...enrichedPlayers].sort((a, b) => {
-      const scoreA = a.submission?.scores?.finalScore;
-      const scoreB = b.submission?.scores?.finalScore;
-      // คนที่ไม่มี score → ไปท้าย
-      if (scoreA === undefined && scoreB === undefined) return 0;
-      if (scoreA === undefined) return 1;
-      if (scoreB === undefined) return -1;
-      return scoreB - scoreA;
-    });
+    // T7: ใช้ comparator กลาง — คนที่ไม่มีคะแนนไปท้ายเหมือนเดิม
+    // แต่กรณีคะแนนเท่ากันจะเรียงตรงกับจอใหญ่และหน้าผลของผู้เล่น
+    return [...enrichedPlayers].sort((a, b) =>
+      compareRank(
+        { scores: a.submission?.scores, submittedAt: a.submission?.submitted_at },
+        { scores: b.submission?.scores, submittedAt: b.submission?.submitted_at }
+      )
+    );
   }, [enrichedPlayers, isResults]);
 
   return (

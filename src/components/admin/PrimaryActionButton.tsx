@@ -2,7 +2,7 @@
 // FILE: src/components/admin/PrimaryActionButton.tsx
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v1
+// VERSION: T7-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Smart Primary Action button — label + behavior changes per phase
@@ -12,6 +12,7 @@
 //          - RESULTS: "เริ่มรอบใหม่"
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): เปลี่ยนคำว่า Pitch เป็น "ข้อความ" + เวลา 5:00
 //   T2-v1 (2026-05-06): Initial
 // =====================================================
 'use client';
@@ -27,15 +28,15 @@ export interface PrimaryActionButtonProps {
 }
 
 const PHASE_LABEL: Record<GamePhase, string> = {
-  LOBBY: '▶ เริ่มเกม → เปิดให้เขียน Pitch',
+  LOBBY: '▶ เริ่มเกม → เปิดให้พิมพ์ข้อความ',
   WRITING: '⏹ ปิดรับ + ไป JUDGING',
-  JUDGING: '🏆 โชว์ Leaderboard → RESULTS',
+  JUDGING: '🏆 เปิดผล → RESULTS',
   RESULTS: '🔄 เริ่มรอบใหม่ → Round ถัดไป',
 };
 
 const PHASE_HINT: Record<GamePhase, string> = {
-  LOBBY: 'ตั้งเวลา 4:00 อัตโนมัติ — set writing_ends_at',
-  WRITING: 'ปิดเวลาทันที — auto-submit pitch ที่ยังพิมพ์ค้าง',
+  LOBBY: 'ตั้งเวลาตาม config อัตโนมัติ (T7 = 5:00) — set writing_ends_at',
+  WRITING: 'ปิดเวลาทันที — ส่งข้อความที่ยังพิมพ์ค้างอัตโนมัติ',
   JUDGING: 'กดได้ตลอด — ถ้ามี failed/scoring จะมี confirm dialog',
   RESULTS: 'round_number + 1 → กลับ LOBBY · data รอบเก่ายังเก็บไว้',
 };

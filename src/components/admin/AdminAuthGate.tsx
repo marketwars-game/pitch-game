@@ -2,13 +2,14 @@
 // FILE: src/components/admin/AdminAuthGate.tsx
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v1
+// VERSION: T7-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Password screen — first thing admin sees
 //          Mesh bg + auth card with password input + submit button
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): เปลี่ยนแบรนด์เป็น DIME × KTC
 //   T2-v1 (2026-05-06): Initial — apply T1 mockup design language
 // =====================================================
 'use client';
@@ -106,7 +107,7 @@ export function AdminAuthGate({ loggingIn, error, onLogin }: AdminAuthGateProps)
             textTransform: 'uppercase',
           }}
         >
-          DIME × AI · MONEY EXPO 2026
+          DIME × KTC · INVESTMENT MADE SIMPLE
         </div>
         <div
           style={{

@@ -2,7 +2,7 @@
 // FILE: src/components/admin/PlayerDetailModal.tsx
 // PROJECT: pitch-game
 // TASK: T3 — AI Judge API
-// VERSION: T3-v1
+// VERSION: T7-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Modal — show full pitch + 3 judge scores + comments
@@ -15,6 +15,9 @@
 //                 - state: idle | running | success | error
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): ชื่อกรรมการใหม่ + แสดงข้อความที่พี่เก่งตอบกลับ (scores.creative.reply)
+//                       + คะแนนกรรมการ 1 ทศนิยม / finalScore 2 ทศนิยม
+//                       + หัวข้อ "Pitch" → "ข้อความที่ส่ง"
 //   T3-v1 (2026-05-06): เพิ่ม Re-judge button (failed submissions only)
 //   T2-v1 (2026-05-06): Initial
 // =====================================================
@@ -377,7 +380,7 @@ export function PlayerDetailModal({
           )}
 
           {/* Pitch */}
-          <SectionTitle>Pitch</SectionTitle>
+          <SectionTitle>ข้อความที่ส่ง</SectionTitle>
           <div
             style={{
               background: '#2a2a2c',
@@ -404,16 +407,18 @@ export function PlayerDetailModal({
               <SectionTitle>Judges</SectionTitle>
               <JudgeCard
                 persona="analyst"
-                icon="🧐"
-                name="The Analyst"
+                icon="🎓"
+                name="The Professor"
+                role="อาจารย์การเงิน"
                 color="#8B5CF6"
                 colorSoft="rgba(139,92,246,0.15)"
                 score={scores.analyst}
               />
               <JudgeCard
                 persona="creative"
-                icon="🎨"
-                name="The Creative"
+                icon="🧡"
+                name="พี่เก่ง"
+                role="คนที่ได้รับข้อความ"
                 color="#FF8C42"
                 colorSoft="rgba(255,140,66,0.15)"
                 score={scores.creative}
@@ -422,6 +427,7 @@ export function PlayerDetailModal({
                 persona="communicator"
                 icon="💬"
                 name="The Communicator"
+                role="เพื่อนที่อ่านแชท"
                 color="#FF5C8A"
                 colorSoft="rgba(255,92,138,0.14)"
                 score={scores.communicator}
@@ -484,6 +490,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function JudgeCard({
   icon,
   name,
+  role,
   color,
   colorSoft,
   score,
@@ -493,6 +500,7 @@ function JudgeCard({
   name: string;
   color: string;
   colorSoft: string;
+  role: string;
   score: JudgeScore | undefined;
 }) {
   if (!score) return null;
@@ -531,6 +539,7 @@ function JudgeCard({
           {icon}
         </div>
         <div style={{ fontSize: 12, fontWeight: 700, color }}>{name}</div>
+        <div style={{ fontSize: 10, color: '#71717A' }}>{role}</div>
       </div>
       <div
         style={{
@@ -550,7 +559,7 @@ function JudgeCard({
               letterSpacing: -0.5,
             }}
           >
-            {score.score}
+            {score.score.toFixed(1)}
           </span>
           <span
             style={{
@@ -572,6 +581,28 @@ function JudgeCard({
       >
         {score.comment}
       </div>
+
+      {/* T7: ข้อความที่พี่เก่งพิมพ์ตอบกลับ (มีเฉพาะ persona creative) */}
+      {score.reply && (
+        <div
+          style={{
+            marginTop: 10,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: `3px solid ${color}`,
+            borderRadius: 8,
+            padding: '9px 11px',
+            fontSize: 12,
+            color: '#D4D4D8',
+            lineHeight: 1.55,
+          }}
+        >
+          <div style={{ fontSize: 10, color: '#71717A', marginBottom: 3, letterSpacing: 1 }}>
+            ข้อความที่ตอบกลับผู้เล่น
+          </div>
+          {score.reply}
+        </div>
+      )}
     </div>
   );
 }

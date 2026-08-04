@@ -2,7 +2,7 @@
 // FILE: src/lib/presenter-config.ts
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// VERSION: T7-v2
 // CREATED: 2026-05-07
 // LAST MODIFIED: 2026-05-07
 // PURPOSE: Static config สำหรับ Presenter View เท่านั้น —
@@ -12,6 +12,8 @@
 //          - Pill grid limits
 //
 // CHANGE LOG:
+//   T7-v2 (2026-08-04): QR encode URL ตรง (ไม่ผ่าน bit.ly) เพื่อลดขั้นตอน
+//                       redirect ตอนสแกน — ข้อความใต้ QR ยังโชว์ bit.ly ให้คนพิมพ์ตามได้
 //   T7-v1 (2026-08-04): เปลี่ยนเนื้อหาให้เป็นงาน KTC
 //                       - QR ชี้ bit.ly/linepitch (ต้องสร้างลิงก์จริงก่อนงาน)
 //                       - ข้อความกรรมการ 3 ชุดใหม่ตามคาแรกเตอร์ T7
@@ -30,8 +32,9 @@ export const URL_BAR_TEXT = 'bit.ly/linepitch';
 export const URL_BAR_CAPTION = 'สแกน QR ด้วยมือถือ — ใส่ชื่อเล่น — รอสัญญาณ';
 
 // QR target URL (ของจริงที่ bit.ly redirect ไป) — ใช้ generate QR
-// ⚠️ ต้องสร้าง bit.ly/linepitch ให้ชี้มาที่ URL นี้ก่อนวันงาน
-export const QR_TARGET_URL = 'https://bit.ly/linepitch';
+// T7-v2: QR encode URL ตรง — สแกนแล้วเข้าเกมทันที ไม่ต้องรอ redirect ของ bit.ly
+// (bit.ly/linepitch มีไว้ให้คนที่พิมพ์เอง หรือให้ MC บอกปากเปล่า)
+export const QR_TARGET_URL = 'https://pitch-game-two.vercel.app/play';
 
 // =====================================================
 // PILL GRID (LOBBY)

@@ -8,8 +8,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AI Stock Pitch Battle — Dime',
-  description: 'MONEY EXPO 2026 — AI Stock Pitch Battle by KKP Dime',
+  title: 'LINE หาพี่เก่ง — DIME × KTC',
+  description: 'Investment Made Simple · KTC — เกมโดย KKP Dime',
 };
 
 export const viewport: Viewport = {

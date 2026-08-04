@@ -1,36 +1,32 @@
 // =====================================================
 // FILE: src/components/presenter/PresenterResultsScreen.tsx
 // PROJECT: pitch-game
-// TASK: T5 — End-to-End Test + Polish
+// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
 // VERSION: T7-v1
 // CREATED: 2026-05-07
-// LAST MODIFIED: 2026-05-07
-// PURPOSE: RESULTS phase on Presenter
-//   - Header: full prompt restated + "🏆 ผู้ชนะ 🏆" gold→red gradient
-//   - Podium 3 cards: Silver(2) · Gold(1, raised) · Bronze(3) — each with 3 judge pips
-//   - Runners 4-10: 7 grid cards
-//   - Footer: total players + "เปิดบัญชี Dime แล้วเทรด..." CTA
-//   - ✨ T5: Gold-only confetti — 60 particles × 2 bursts (1s, 4s after mount)
-//
-// Sorts submissions by scores.finalScore DESC. Resolves nicknames via players[].
-// Skips submissions without finalScore (judging_status='failed' before AUTO_DEFAULT applied).
+// LAST MODIFIED: 2026-08-04
+// PURPOSE: จอผลรอบสุดท้าย — รับใช้องก์ 2-3 ของการเฉลย
+//          - เปิดทีละขั้นด้วย SPACE/คลิก ให้ MC คุมจังหวะพากลุ้นเอง
+//            (state ฝั่ง client ล้วน ไม่แตะ DB / ไม่แตะ phase)
+//          - podium 3 แท่ง + คะแนนแยกรายกรรมการ
+//          - กล่องข้อความของแชมป์ + ข้อความที่พี่เก่งตอบกลับ (สำหรับ MC อ่านออกเสียง)
+//          - อันดับ 4-10
 //
 // CHANGE LOG:
-//   T7-v1 (2026-08-04): ใช้ชื่อเคสแทน ticker (การจัดอันดับ + 2 ทศนิยม ทำใน Batch 3)
-//   T5-v1 (2026-05-07): + gold-only confetti via canvas-confetti dynamic import
-//                        - Trigger on mount when ranked.length > 0
-//                        - 60 particles × 2 bursts at 1s and 4s
-//                        - Cleanup via cancelled flag for safe unmount
-//                        - Dynamic import to avoid SSR break (window.requestAnimationFrame)
-//   T4-v1 (2026-05-07): Initial
+//   T7-v1 (2026-08-04): เขียนใหม่ — staged reveal, ranking.ts, 2 ทศนิยม,
+//                       ข้อความแชมป์, ใช้ PresenterChrome แทน PresenterHeader
+//   T5-v1 (2026-05-07): Top 3 podium + Top 4-10 + gold confetti
 // =====================================================
 'use client';
 
-import { useEffect } from 'react';
-import type { GameRow, PlayerRow, SubmissionRow, SubmissionScores } from '@/lib/types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { GameRow, PlayerRow, SubmissionRow } from '@/lib/types';
+import { compareRank, resolveFinalScore, formatScoreCompare } from '@/lib/ranking';
 import { PODIUM_TOP_N, RUNNERS_TOP_N } from '@/lib/presenter-config';
-import { PresenterAmbientBg } from './PresenterAmbientBg';
-import { PresenterHeader } from './PresenterHeader';
+import { T7Ambient, T7TopBar } from './PresenterChrome';
+
+/** กันกดรัว — MC เผลอกดสองครั้งจะไม่ข้ามอันดับ */
+const ADVANCE_LOCK_MS = 600;
 
 type Props = {
   game: GameRow;
@@ -38,266 +34,241 @@ type Props = {
   submissions: SubmissionRow[];
 };
 
-type RankedRow = {
-  submissionId: string;
+type Row = {
+  id: string;
   nickname: string;
   finalScore: number;
-  scores: SubmissionScores | null;
+  pitch: string;
+  analyst?: number;
+  creative?: number;
+  communicator?: number;
+  reply?: string;
 };
 
-function buildRanked(
-  players: PlayerRow[],
-  submissions: SubmissionRow[]
-): RankedRow[] {
-  const playerById = new Map(players.map((p) => [p.id, p]));
-  const ranked: RankedRow[] = [];
-
-  for (const s of submissions) {
-    const final = s.scores?.finalScore;
-    if (typeof final !== 'number') continue; // skip un-scored
-
-    const player = playerById.get(s.player_id);
-    ranked.push({
-      submissionId: s.id,
-      nickname: player?.nickname ?? '—',
-      finalScore: final,
-      scores: s.scores,
-    });
-  }
-
-  ranked.sort((a, b) => b.finalScore - a.finalScore);
-  return ranked;
-}
-
-// =====================================================
-// T5-v1: Confetti config (gold-only)
-// =====================================================
-const CONFETTI_GOLD_PALETTE = ['#f5c518', '#ffd700', '#ffea80'];
-const CONFETTI_BURST_1_DELAY_MS = 1000; // 1s after mount — wait for podium pop-in
-const CONFETTI_BURST_2_DELAY_MS = 4000; // 4s after mount — reinforce winner moment
-
 export function PresenterResultsScreen({ game, players, submissions }: Props) {
-  const ranked = buildRanked(players, submissions);
+  const nameOf = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of players) map.set(p.id, p.nickname);
+    return map;
+  }, [players]);
 
-  // =====================================================
-  // T5-v1: Fire gold-only confetti on mount (if there are winners)
-  // - Dynamic import to avoid SSR break
-  // - 2 bursts × 60 particles, gold palette
-  // - Cleanup via cancelled flag (safe on unmount before bursts fire)
-  // =====================================================
+  const ranked = useMemo<Row[]>(() => {
+    return submissions
+      .filter((s) => resolveFinalScore(s.scores) !== null)
+      .sort((a, b) =>
+        compareRank(
+          { scores: a.scores, submittedAt: a.submitted_at },
+          { scores: b.scores, submittedAt: b.submitted_at }
+        )
+      )
+      .map((s) => ({
+        id: s.id,
+        nickname: nameOf.get(s.player_id) ?? '—',
+        finalScore: resolveFinalScore(s.scores) ?? 0,
+        pitch: s.pitch,
+        analyst: s.scores?.analyst?.score,
+        creative: s.scores?.creative?.score,
+        communicator: s.scores?.communicator?.score,
+        reply: s.scores?.creative?.reply,
+      }));
+  }, [submissions, nameOf]);
+
+  const podium = ranked.slice(0, PODIUM_TOP_N);
+  const runners = ranked.slice(PODIUM_TOP_N, PODIUM_TOP_N + RUNNERS_TOP_N);
+  const champ = podium[0] ?? null;
+  const kengName = game.stock?.name ?? 'พี่เก่ง';
+
+  // ---------- การเปิดผลทีละขั้น ----------
+  // 0 = ยังไม่เปิดอะไร · 1 = อันดับ 3 · 2 = อันดับ 2 · 3 = แชมป์
+  // 4 = ข้อความแชมป์ · 5 = อันดับ 4-10
+  const [step, setStep] = useState(0);
+  const lockRef = useRef(0);
+
+  const advance = useCallback(() => {
+    const now = Date.now();
+    if (now - lockRef.current < ADVANCE_LOCK_MS) return;
+    lockRef.current = now;
+    setStep((s) => Math.min(5, s + 1));
+  }, []);
+
   useEffect(() => {
-    if (ranked.length === 0) return;
-
-    let cancelled = false;
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
-
-    const fire = async () => {
-      try {
-        const confettiModule = await import('canvas-confetti');
-        if (cancelled) return;
-        const confetti = confettiModule.default;
-
-        const baseConfig = {
-          particleCount: 60,
-          spread: 70,
-          origin: { x: 0.5, y: 0.6 },
-          colors: CONFETTI_GOLD_PALETTE,
-          ticks: 200,
-        };
-
-        // Burst 1 — after podium pop-in
-        timeouts.push(
-          setTimeout(() => {
-            if (!cancelled) confetti(baseConfig);
-          }, CONFETTI_BURST_1_DELAY_MS)
-        );
-
-        // Burst 2 — reinforce winner moment
-        timeouts.push(
-          setTimeout(() => {
-            if (!cancelled) confetti(baseConfig);
-          }, CONFETTI_BURST_2_DELAY_MS)
-        );
-      } catch (err) {
-        // Silent fail — confetti is nice-to-have, not critical path
-        console.warn('[PresenterResultsScreen] Confetti failed to load:', err);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowRight') {
+        e.preventDefault();
+        advance();
       }
     };
-
-    fire();
-
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('click', advance);
     return () => {
-      cancelled = true;
-      timeouts.forEach(clearTimeout);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('click', advance);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // mount only — RESULTS phase entry triggers component mount
+  }, [advance]);
 
-  // Top 3 in podium order: 2 (left) · 1 (center) · 3 (right)
-  const r1 = ranked[0];
-  const r2 = ranked[1];
-  const r3 = ranked[2];
+  const headline =
+    step === 0
+      ? `ใครทำให้${kengName}กล้าเริ่มได้มากที่สุด`
+      : step === 1
+        ? 'อันดับ 3 …'
+        : step === 2
+          ? 'อันดับ 2 …'
+          : step === 3
+            ? 'แชมป์ของรอบนี้'
+            : `ใครทำให้${kengName}กล้าเริ่มได้มากที่สุด`;
 
-  const runners = ranked.slice(PODIUM_TOP_N, PODIUM_TOP_N + RUNNERS_TOP_N);
-
-  const stock = game.stock;
-  const ticker = stock?.name ?? '—';
-  const totalPlayers = players.length;
+  const cue =
+    step === 0
+      ? 'เปิดอันดับ 3'
+      : step === 1
+        ? 'เปิดอันดับ 2'
+        : step === 2
+          ? 'เปิดแชมป์'
+          : step === 3
+            ? 'เปิดข้อความของแชมป์'
+            : step === 4
+              ? 'เปิดอันดับ 4–10'
+              : null;
 
   return (
-    <div className="presenter-stage-inner">
-      <PresenterAmbientBg />
-      <PresenterHeader statusText="FINAL RESULTS" statusVariant="warn" />
+    <div className="t7-results">
+      <T7Ambient />
+      {step >= 3 && <Confetti />}
 
-      <div className="presenter-results-wrap">
-        <div className="presenter-results-header">
-          <div className="presenter-results-eyebrow">โจทย์</div>
-          <div className="presenter-results-prompt">
-            Pitch หุ้น{' '}
-            <span className="presenter-results-prompt-stock">{ticker}</span>{' '}
-            ให้ลูกฟัง — ทำไมควรเอาเงิน{' '}
-            <span className="presenter-results-prompt-money">50 บาท</span> มาลงทุน
-          </div>
-          <div className="presenter-results-title">
-            <span>🏆</span>ผู้ชนะ<span>🏆</span>
-          </div>
+      <div className="t7-stage">
+        <T7TopBar status="ผลการตัดสิน" variant="warn" />
+
+        <div className="t7-r-headline">
+          <div className="t7-j-big">{headline}</div>
         </div>
 
-        {ranked.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <>
-            <div className="presenter-podium">
-              {r2 ? (
-                <PodiumCard rank={2} medal="🥈" row={r2} variant="silver" />
-              ) : (
-                <PodiumPlaceholder variant="silver" />
-              )}
-              {r1 ? (
-                <PodiumCard rank={1} medal="🥇" row={r1} variant="gold" />
-              ) : (
-                <PodiumPlaceholder variant="gold" />
-              )}
-              {r3 ? (
-                <PodiumCard rank={3} medal="🥉" row={r3} variant="bronze" />
-              ) : (
-                <PodiumPlaceholder variant="bronze" />
-              )}
-            </div>
+        <div className="t7-r-body">
+          <div className="t7-podium">
+            <PodiumSlot rank={2} row={podium[1]} open={step >= 2} />
+            <PodiumSlot rank={1} row={podium[0]} open={step >= 3} />
+            <PodiumSlot rank={3} row={podium[2]} open={step >= 1} />
+          </div>
 
-            {runners.length > 0 && (
-              <div className="presenter-runners">
-                {runners.map((row, i) => (
-                  <RunnerCard
-                    key={row.submissionId}
-                    rank={PODIUM_TOP_N + 1 + i}
-                    row={row}
-                  />
-                ))}
+          <div className={`t7-champ${step >= 4 ? ' t7-on' : ''}`}>
+            <div className="t7-champ-head">ข้อความที่ทำให้{kengName}กล้าเริ่ม</div>
+            <div className="t7-champ-chat">
+              <div className="t7-champ-mine">{champ?.pitch ?? '—'}</div>
+              <div className="t7-champ-kengrow">
+                <div className="t7-ava">ก</div>
+                <div className="t7-champ-keng">
+                  {champ?.reply ?? 'พี่อ่านแล้วนะ ขอเก็บไปคิดก่อน 🙏'}
+                </div>
               </div>
-            )}
-          </>
-        )}
+            </div>
+            <div className="t7-champ-foot">ฟัง → หลักการ → ก้าวเล็กที่ทำได้วันนี้</div>
+          </div>
+        </div>
 
-        <div className="presenter-results-footer">
-          ทั้งหมด <span className="presenter-results-footer-accent">{totalPlayers}</span> คน
-          · เปิดบัญชี Dime แล้วเทรดได้จาก{' '}
-          <span className="presenter-results-footer-accent">50 บาท</span>
+        <div className={`t7-runners${step >= 5 ? ' t7-on' : ''}`}>
+          <div className="t7-run-head">อันดับ 4–10</div>
+          <div className="t7-run-row">
+            {runners.map((r, i) => (
+              <div key={r.id} className="t7-run">
+                <i>{i + PODIUM_TOP_N + 1}</i>
+                <b>{r.nickname}</b>
+                <span>{formatScoreCompare(r.finalScore)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {cue && (
+        <div className="t7-cue">
+          กด <span className="t7-kbd">SPACE</span> เพื่อ{cue}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =====================================================
+// แท่ง podium — ก่อนเปิดเป็นเงาโครงเส้นประ + เครื่องหมาย ?
+// =====================================================
+function PodiumSlot({
+  rank,
+  row,
+  open,
+}: {
+  rank: 1 | 2 | 3;
+  row?: Row;
+  open: boolean;
+}) {
+  const medal = rank === 1 ? '🏆' : rank === 2 ? '🥈' : '🥉';
+  const show = open && !!row;
+
+  return (
+    <div className={`t7-slot t7-slot--${rank}${show ? ' t7-on' : ''}`}>
+      <div className="t7-pending">
+        <div className="t7-qmark">?</div>
+        <div className="t7-ghostbar" />
+      </div>
+
+      <div className="t7-slot-inner">
+        <div className="t7-medal">{medal}</div>
+        <div className="t7-nick">{row?.nickname ?? '—'}</div>
+        <div className="t7-score">
+          {formatScoreCompare(row?.finalScore)}
+          <small>/10</small>
+        </div>
+        <div className="t7-breakdown">
+          <span className="t7-bd t7-bd--prof">{fmt1(row?.analyst)}</span>
+          <span className="t7-bd t7-bd--keng">{fmt1(row?.creative)}</span>
+          <span className="t7-bd t7-bd--comm">{fmt1(row?.communicator)}</span>
+        </div>
+        <div className="t7-bar">
+          <div className="t7-rankno">{rank}</div>
         </div>
       </div>
     </div>
   );
 }
 
-type PodiumVariant = 'gold' | 'silver' | 'bronze';
-
-function PodiumCard({
-  rank,
-  medal,
-  row,
-  variant,
-}: {
-  rank: number;
-  medal: string;
-  row: RankedRow;
-  variant: PodiumVariant;
-}) {
-  const a = row.scores?.analyst?.score;
-  const c = row.scores?.creative?.score;
-  const m = row.scores?.communicator?.score;
-
-  return (
-    <div className={`presenter-podium-card presenter-podium-card--${variant}`}>
-      <div className="presenter-podium-medal">{medal}</div>
-      <div className="presenter-podium-rank">RANK {rank}</div>
-      <div className="presenter-podium-name">{row.nickname}</div>
-      <div className="presenter-podium-score">
-        {row.finalScore.toFixed(1)}
-        <span className="presenter-podium-score-of">/10</span>
-      </div>
-      <div className="presenter-podium-judges">
-        <JudgePip kind="a" label="ANL" score={a} />
-        <JudgePip kind="c" label="CRT" score={c} />
-        <JudgePip kind="cm" label="COM" score={m} />
-      </div>
-    </div>
-  );
+function fmt1(v: number | undefined): string {
+  return typeof v === 'number' && isFinite(v) ? v.toFixed(1) : '—';
 }
 
-function PodiumPlaceholder({ variant }: { variant: PodiumVariant }) {
-  return (
-    <div
-      className={`presenter-podium-card presenter-podium-card--${variant} presenter-podium-card--empty`}
-    >
-      <div className="presenter-podium-medal" style={{ opacity: 0.3 }}>
-        —
-      </div>
-      <div className="presenter-podium-name" style={{ opacity: 0.4 }}>
-        ไม่มีข้อมูล
-      </div>
-    </div>
-  );
-}
+// =====================================================
+// Confetti — seeded (ไม่ใช้ Math.random กัน hydration mismatch)
+// =====================================================
+const CONFETTI_COLORS = ['#f5c518', '#5DEFA3', '#00d4ff', '#FF8FB0', '#B79CFF'];
 
-function JudgePip({
-  kind,
-  label,
-  score,
-}: {
-  kind: 'a' | 'c' | 'cm';
-  label: string;
-  score: number | undefined;
-}) {
-  return (
-    <div className={`presenter-judge-pip presenter-judge-pip--${kind}`}>
-      <span className="presenter-judge-pip-score">{score ?? '—'}</span>
-      <span className="presenter-judge-pip-label">{label}</span>
-    </div>
+function Confetti() {
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 46 }, (_, i) => {
+        const s = (n: number) => {
+          const x = Math.sin(i * 71.3 + n * 191.7) * 43758.5453;
+          return x - Math.floor(x);
+        };
+        return {
+          left: `${s(1) * 100}%`,
+          color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+          duration: `${5 + s(2) * 5}s`,
+          delay: `${s(3) * 6}s`,
+        };
+      }),
+    []
   );
-}
-
-function RunnerCard({ rank, row }: { rank: number; row: RankedRow }) {
   return (
-    <div className="presenter-runner-card">
-      <div className="presenter-runner-rank">#{rank}</div>
-      <div className="presenter-runner-name">{row.nickname}</div>
-      <div className="presenter-runner-score">{row.finalScore.toFixed(1)}</div>
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div
-      style={{
-        textAlign: 'center',
-        padding: '64px 0',
-        color: 'var(--presenter-text-3)',
-        fontFamily: 'var(--presenter-font-mono)',
-        letterSpacing: '2px',
-      }}
-    >
-      ยังไม่มีคะแนน
+    <div className="t7-confetti">
+      {pieces.map((p, i) => (
+        <span
+          key={i}
+          className="t7-conf"
+          style={{
+            left: p.left,
+            background: p.color,
+            animationDuration: p.duration,
+            animationDelay: p.delay,
+          }}
+        />
+      ))}
     </div>
   );
 }

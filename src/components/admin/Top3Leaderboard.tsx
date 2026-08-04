@@ -2,19 +2,22 @@
 // FILE: src/components/admin/Top3Leaderboard.tsx
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T2-v1
+// VERSION: T7-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-05-06
 // PURPOSE: Top 3 leaderboard for RESULTS phase
 //          Sorted by finalScore DESC, clickable to open PlayerDetailModal
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): ใช้ compareRank จาก ranking.ts (มีกติกาตัดสินเสมอ)
+//                       + แสดงคะแนน 2 ทศนิยม (จอที่เอาคะแนนมาเทียบกัน)
 //   T2-v1 (2026-05-06): Initial
 // =====================================================
 'use client';
 
 import { useMemo } from 'react';
 import type { PlayerStatusEnriched } from '@/lib/types';
+import { compareRank } from '@/lib/ranking';
 
 export interface Top3LeaderboardProps {
   enrichedPlayers: PlayerStatusEnriched[];
@@ -30,11 +33,13 @@ export function Top3Leaderboard({
   const top3 = useMemo(() => {
     const scored = enrichedPlayers
       .filter((p) => p.submission?.scores?.finalScore !== undefined)
-      .sort((a, b) => {
-        const scoreA = a.submission?.scores?.finalScore ?? 0;
-        const scoreB = b.submission?.scores?.finalScore ?? 0;
-        return scoreB - scoreA;
-      })
+      // T7: เรียงด้วย comparator กลาง — finalScore → พี่เก่ง → Professor → ส่งก่อน
+      .sort((a, b) =>
+        compareRank(
+          { scores: a.submission?.scores, submittedAt: a.submission?.submitted_at },
+          { scores: b.submission?.scores, submittedAt: b.submission?.submitted_at }
+        )
+      )
       .slice(0, 3);
     return scored;
   }, [enrichedPlayers]);
@@ -140,7 +145,7 @@ export function Top3Leaderboard({
                 fontVariantNumeric: 'tabular-nums',
               }}
             >
-              {p.submission?.scores?.finalScore?.toFixed(1) ?? '—'}
+              {p.submission?.scores?.finalScore?.toFixed(2) ?? '—'}
             </div>
           </button>
         ))}
