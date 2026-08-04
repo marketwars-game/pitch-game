@@ -2,7 +2,7 @@
 // FILE: src/app/api/judge/route.ts
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v2
+// VERSION: T7-v3
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-08-04
 // PURPOSE: POST /api/judge — รับ submissionId → ยิง 3 personas parallel → UPDATE scores
@@ -15,6 +15,8 @@
 // Response: { ok: true, status: 'done' | 'failed', personas_succeeded: number }
 //
 // CHANGE LOG:
+//   T7-v3 (2026-08-04): ส่ง allowReply ให้ callJudge — เปิดช่อง reply เฉพาะพี่เก่ง
+//                       (แก้อาการกรรมการอีก 2 คน fail 100% ดู anthropic.ts T7-v4)
 //   T7-v2 (2026-08-04): กรรมการคนที่ 2 = "พี่เก่ง" (คอมเมนต์ + fallback text)
 //                       ตรรกะคะแนน/การเก็บ reply ไม่เปลี่ยน
 //   T7-v1 (2026-08-04): จุดแปลงหน่วยคะแนน 0-100 → 0.0-10.0 อยู่ที่ไฟล์นี้ที่เดียว
@@ -100,6 +102,8 @@ async function runPersona(
     return await callJudge({
       systemPrompt: SYSTEM_PROMPTS[persona],
       userMessage,
+      // T7-v4: เปิดช่อง reply เฉพาะพี่เก่ง — กรรมการอีก 2 คนจะไม่เห็นช่องนี้เลย
+      allowReply: persona === 'creative',
     });
   } catch (err) {
     console.error(

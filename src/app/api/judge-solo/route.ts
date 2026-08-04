@@ -2,7 +2,7 @@
 // FILE: src/app/api/judge-solo/route.ts
 // PROJECT: pitch-game
 // TASK: T6 — Solo Mode
-// VERSION: T7-v1
+// VERSION: T7-v2
 // CREATED: 2026-05-09
 // PURPOSE: POST /api/judge-solo — รับ submissionId → ยิง 3 personas parallel
 //          → UPDATE solo_submissions row scores
@@ -15,6 +15,8 @@
 // same fallback comments, same finalScore averaging.
 //
 // CHANGE LOG:
+//   T7-v2 (2026-08-04): ส่ง allowReply ให้ callJudge — เปิดช่อง reply เฉพาะพี่เก่ง
+//                       (แก้อาการกรรมการอีก 2 คน fail 100% ดู anthropic.ts T7-v4)
 //   T7-v1 (2026-08-04): ตามสเกลคะแนนใหม่ของ T7 (AI ให้ 0-100 → เก็บ 0.0-10.0)
 //                       - toScore10() เหมือน /api/judge · finalScore 2 ทศนิยม
 //                       - เก็บ reply ของพี่เก่ง + fallback
@@ -77,6 +79,8 @@ async function runPersona(
     return await callJudge({
       systemPrompt: SYSTEM_PROMPTS[persona],
       userMessage,
+      // T7-v4: เปิดช่อง reply เฉพาะพี่เก่ง — กรรมการอีก 2 คนจะไม่เห็นช่องนี้เลย
+      allowReply: persona === 'creative',
     });
   } catch (err) {
     // eslint-disable-next-line no-console

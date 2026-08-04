@@ -2,7 +2,7 @@
 // FILE: src/lib/anthropic.ts
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v3
+// VERSION: T7-v4
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-08-04
 // PURPOSE: Anthropic SDK client + retry helper + Tool Use forced JSON
@@ -12,6 +12,17 @@
 //   - ✨ T5-v2: Tool Use forced (tool_choice='tool') — guarantee JSON shape
 //
 // CHANGE LOG:
+//   T7-v4 (2026-08-04): 🔴 FIX — กรรมการ 2 ใน 3 fail ทุกครั้ง
+//                        อาการ: Haiku เอาคอมเมนต์ไปใส่ช่อง `reply` แล้วไม่ส่ง `comment`
+//                        → validation ตีว่า missing required fields → persona fail
+//                        สาเหตุ: schema เดียวใช้ร่วมทุก persona แล้วโชว์ช่อง reply
+//                        ให้กรรมการที่ไม่ต้องใช้เห็นด้วย คำกำกับ "เฉพาะพี่เก่ง"
+//                        ในคำอธิบายไม่พอที่จะกันโมเดลเลือกช่องผิด
+//                        แก้ 2 ชั้น:
+//                          1) แยก tool เป็น 2 ตัว — ตัวที่ไม่มีช่อง reply เลย
+//                             ใช้กับ analyst/communicator (โมเดลเลือกผิดไม่ได้)
+//                          2) fallback: ถ้า comment หายแต่มี reply ให้ใช้ reply แทน
+//                             กันไม่ให้ persona fail ซ้ำรอยเดิมในทุกกรณี
 //   T7-v3 (2026-08-04): คำอธิบาย field reply/comment ย้ำว่าทำหน้าที่ต่างกัน
 //                       reply = แชทล้วน ห้ามพูดถึงคะแนน (ตรรกะไม่เปลี่ยน)
 //   T7-v2 (2026-08-04): เปลี่ยนคำอธิบาย field reply — กรรมการคนที่ 2 คือ "พี่เก่ง"
@@ -60,6 +71,23 @@ const MAX_JITTER_MS = 1000;
 // Anthropic's recommended pattern for guaranteed structured output:
 // Force model to call this tool → input must match schema → 0 parse failures
 // Reference: https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/implement-tool-use
+const SCORE_PROP = {
+  type: 'integer' as const,
+  minimum: 0,
+  maximum: 100,
+  description:
+    'คะแนน 0-100 ตามเกณฑ์และช่วงคะแนนของคาแรกเตอร์กรรมการ ' +
+    'ห้ามลงท้ายด้วย 0 หรือ 5 — ให้เลขที่เจาะจง เช่น 83, 78, 91, 64',
+};
+
+const COMMENT_PROP = {
+  type: 'string' as const,
+  description:
+    'คอมเมนต์ภาษาไทย 1-2 ประโยค ตามคาแรกเตอร์ที่กำหนด ห้ามเกิน 2 ประโยค ' +
+    'ช่องนี้บังคับ ต้องส่งเสมอ',
+};
+
+/** ใช้กับ analyst / communicator — ไม่มีช่อง reply ให้เลือกผิด */
 const SUBMIT_JUDGMENT_TOOL: Anthropic.Tool = {
   name: 'submit_judgment',
   description:
@@ -67,31 +95,37 @@ const SUBMIT_JUDGMENT_TOOL: Anthropic.Tool = {
   input_schema: {
     type: 'object',
     properties: {
-      score: {
-        type: 'integer',
-        minimum: 0,
-        maximum: 100,
-        description:
-          'คะแนน 0-100 ตามเกณฑ์และช่วงคะแนนของคาแรกเตอร์กรรมการ ' +
-          'ห้ามลงท้ายด้วย 0 หรือ 5 — ให้เลขที่เจาะจง เช่น 83, 78, 91, 64',
-      },
-      comment: {
-        type: 'string',
-        description:
-          'คอมเมนต์ภาษาไทย 1-2 ประโยค ตามคาแรกเตอร์ที่กำหนด ห้ามเกิน 2 ประโยค ' +
-          'สำหรับพี่เก่ง: ต้องเป็นเหตุผลของคะแนน และห้ามพูดซ้ำสิ่งที่เขียนใน reply',
-      },
-      reply: {
-        type: 'string',
-        description:
-          'เฉพาะพี่เก่ง — ข้อความที่พี่เก่งพิมพ์ตอบกลับในไลน์ 1-2 ประโยค ภาษาพูดล้วน ' +
-          'ห้ามพูดถึงคะแนนหรือการตัดสินใน field นี้ · กรรมการคนอื่นไม่ต้องส่ง field นี้',
-      },
+      score: SCORE_PROP,
+      comment: COMMENT_PROP,
     },
     required: ['score', 'comment'],
   },
 };
 
+/** ใช้กับ persona พี่เก่ง (creative) เท่านั้น — มีช่อง reply เพิ่ม */
+const SUBMIT_JUDGMENT_TOOL_WITH_REPLY: Anthropic.Tool = {
+  name: 'submit_judgment',
+  description:
+    'ส่งคะแนน คอมเมนต์ และข้อความที่พี่เก่งพิมพ์ตอบกลับ — ต้องเรียก tool นี้เท่านั้น',
+  input_schema: {
+    type: 'object',
+    properties: {
+      score: SCORE_PROP,
+      comment: {
+        type: 'string' as const,
+        description:
+          'เหตุผลของคะแนน 1-2 ประโยค — คนละเรื่องกับ reply ห้ามเขียนซ้ำกัน ช่องนี้บังคับ',
+      },
+      reply: {
+        type: 'string' as const,
+        description:
+          'ข้อความที่พี่เก่งพิมพ์ตอบกลับในไลน์ 1-2 ประโยค ภาษาพูดล้วน ' +
+          'ห้ามพูดถึงคะแนนหรือการตัดสินในช่องนี้',
+      },
+    },
+    required: ['score', 'comment', 'reply'],
+  },
+};
 // =====================================================
 // Singleton client
 // =====================================================
@@ -211,7 +245,12 @@ function sanitizeComment(value: unknown): string {
 export async function callJudge(params: {
   systemPrompt: string;
   userMessage: string;
+  /** true เฉพาะ persona พี่เก่ง (creative) — เปิดช่อง reply ใน tool schema */
+  allowReply?: boolean;
 }): Promise<JudgeResponse> {
+  const tool = params.allowReply
+    ? SUBMIT_JUDGMENT_TOOL_WITH_REPLY
+    : SUBMIT_JUDGMENT_TOOL;
   const anthropic = getAnthropicClient();
   let lastError: unknown = null;
 
@@ -223,7 +262,7 @@ export async function callJudge(params: {
         temperature: JUDGE_TEMPERATURE,
         system: params.systemPrompt,
         messages: [{ role: 'user', content: params.userMessage }],
-        tools: [SUBMIT_JUDGMENT_TOOL],
+        tools: [tool],
         tool_choice: { type: 'tool', name: 'submit_judgment' },
       });
 
@@ -257,14 +296,25 @@ export async function callJudge(params: {
       // SDK pre-parses tool input as JSON object
       const input = toolUseBlock.input as Record<string, unknown>;
 
-      if (
-        !input ||
-        typeof input !== 'object' ||
-        !('score' in input) ||
-        !('comment' in input)
-      ) {
+      if (!input || typeof input !== 'object' || !('score' in input)) {
         throw new Error(
-          `Tool input missing required fields: ${JSON.stringify(input).slice(0, 300)}`
+          `Tool input missing score: ${JSON.stringify(input).slice(0, 300)}`
+        );
+      }
+
+      // T7-v4: กันเคสโมเดลเอาคอมเมนต์ไปใส่ช่อง reply แล้วไม่ส่ง comment
+      // (เคยทำให้ analyst/communicator fail 100% ตอนใช้ schema ร่วมกัน)
+      if (!('comment' in input) && typeof input.reply === 'string') {
+        console.warn(
+          '[anthropic] comment missing — ใช้ค่าจาก reply แทน (schema fallback)'
+        );
+        input.comment = input.reply;
+        if (!params.allowReply) delete input.reply;
+      }
+
+      if (!('comment' in input)) {
+        throw new Error(
+          `Tool input missing comment: ${JSON.stringify(input).slice(0, 300)}`
         );
       }
 
