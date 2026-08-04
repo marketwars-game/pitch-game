@@ -1,8 +1,8 @@
 // =====================================================
 // FILE: src/lib/presenter-config.ts
 // PROJECT: pitch-game
-// TASK: T4 — Presenter View
-// VERSION: T4-v1
+// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
+// VERSION: T7-v1
 // CREATED: 2026-05-07
 // LAST MODIFIED: 2026-05-07
 // PURPOSE: Static config สำหรับ Presenter View เท่านั้น —
@@ -12,6 +12,11 @@
 //          - Pill grid limits
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): เปลี่ยนเนื้อหาให้เป็นงาน KTC
+//                       - QR ชี้ bit.ly/linepitch (ต้องสร้างลิงก์จริงก่อนงาน)
+//                       - ข้อความกรรมการ 3 ชุดใหม่ตามคาแรกเตอร์ T7
+//                       - เพิ่ม JUDGING_STREAM_SNIPPETS (ข้อความลอยพื้นหลัง)
+//                       - เพิ่ม BRAND_* สำหรับ lock-up DIME × KTC
 //   T4-v1 (2026-05-07): Initial — extracted from mockup v4
 // =====================================================
 
@@ -19,13 +24,14 @@
 // LOBBY — URL Bar
 // =====================================================
 // Short URL ที่แสดงใต้ QR (จริง redirect ไป Vercel URL)
-export const URL_BAR_TEXT = 'bit.ly/stockpitchbattle';
+export const URL_BAR_TEXT = 'bit.ly/linepitch';
 
 // Caption ใต้ URL bar (Thai)
-export const URL_BAR_CAPTION = 'สแกน QR ด้วยมือถือ — ใส่ชื่อเล่น — เริ่มเลย';
+export const URL_BAR_CAPTION = 'สแกน QR ด้วยมือถือ — ใส่ชื่อเล่น — รอสัญญาณ';
 
 // QR target URL (ของจริงที่ bit.ly redirect ไป) — ใช้ generate QR
-export const QR_TARGET_URL = 'https://pitch-game-two.vercel.app/play';
+// ⚠️ ต้องสร้าง bit.ly/linepitch ให้ชี้มาที่ URL นี้ก่อนวันงาน
+export const QR_TARGET_URL = 'https://bit.ly/linepitch';
 
 // =====================================================
 // PILL GRID (LOBBY)
@@ -51,27 +57,27 @@ export const COUNTDOWN_WARN_SECONDS = 30;
 export const JUDGE_MSG_INTERVAL_MS = 2400;
 
 export const ANALYST_MESSAGES: readonly string[] = [
-  'กำลังตรวจตัวเลขในงบ',
-  'อ่าน thesis ลงทุน',
-  'หาเหตุผลรองรับ',
-  'เช็คว่ามีข้อมูลพอมั้ย',
-  'compare กับ peer',
+  'ใช้เครื่องมือถูกชิ้น… แต่ถูกจังหวะไหม',
+  'อันนี้แปะชื่อเครื่องมือเฉยๆ หรือใช้จริง',
+  'เงินสำรอง 6 เดือนหายไปไหน',
+  'หยิบมา 3 ชิ้น แถมร้อยกันได้ด้วย',
+  'สั่งลงทั้งก้อนแบบนี้ไม่ได้นะ',
 ];
 
 export const CREATIVE_MESSAGES: readonly string[] = [
-  'กำลังหาคำเปรียบเทียบเด็ดๆ',
-  'ลองอ่านเสียงในหัวดู',
-  'มี story arc มั้ยนะ',
-  'นึกถึงตอนเด็กๆ ฟังพ่อแม่เล่า',
-  'ตรวจดู hook เปิดเรื่อง',
+  'อ่านแล้วพี่กล้าขึ้นจริงไหมนะ…',
+  'อันนี้พูดเหมือนเข้าใจพี่จริงๆ',
+  'ยังไม่ได้ตอบที่พี่กลัวเลยนี่',
+  'เออ… เดี๋ยวพี่ลองดูก็ได้',
+  'พี่ไม่ชอบให้ใครมาเร่งนะ',
 ];
 
 export const COMMUNICATOR_MESSAGES: readonly string[] = [
-  'ตรวจว่าบอกความเสี่ยงครบมั้ย',
-  'ใช้ศัพท์การเงินเยอะไปมั้ย',
-  'เด็ก 10 ขวบเข้าใจมั้ย',
-  'Disclaimer ตรงไหน',
-  'น้ำหนัก upside vs downside',
+  'อันนี้เหมือนคนพิมพ์จริง',
+  'อันนี้อ่านเหมือนโบรชัวร์เลย',
+  'ยาวไปนิดนึง อ่านไม่จบแน่',
+  'เปิดด้วยการรับความรู้สึกก่อน ดีมาก',
+  'เขียนเป็นข้อๆ ในไลน์เหรอ…',
 ];
 
 // =====================================================
@@ -96,3 +102,25 @@ export const RUNNERS_TOP_N = 7;    // 4-10 ในส่วน runners (max 7 car
 // =====================================================
 // keys ที่ trigger LANDING → real phase
 export const LANDING_DISMISS_KEYS = ['Space', 'Enter'] as const;
+
+// =====================================================
+// T7 — Brand lock-up (ตัวอักษรล้วน ไม่ใช้โลโก้ KTC)
+// =====================================================
+export const BRAND_LEFT = 'DIME';
+export const BRAND_RIGHT = 'KTC';
+export const SESSION_NAME = 'INVESTMENT MADE SIMPLE';
+
+// =====================================================
+// T7 — ข้อความลอยพื้นหลังตอน JUDGING
+// ตัดจากแนวคำตอบจริงของผู้เล่น (ไม่มีชื่อ) ให้จอมีชีวิตระหว่างรอ
+// =====================================================
+export const JUDGING_STREAM_SNIPPETS: readonly string[] = [
+  'พี่เก่งครับ ผมเข้าใจที่พี่กลัวเลย…',
+  'ลองเริ่มเดือนละ 500 ก่อนไหมพี่',
+  'ไม่ต้องรู้เยอะก็เริ่มได้นะ',
+  'กันเงินสำรองไว้ก่อน เหลือค่อยลง',
+  'พี่ไม่ต้องเอาสองแสนไปเสี่ยงหมด',
+  'ลดหย่อนภาษีได้ด้วยนะพี่',
+  'เริ่มจาก 50 บาทก็ได้ครับ',
+  'พี่เคยบอกว่าอยากเกษียณสบายใช่ไหม',
+];

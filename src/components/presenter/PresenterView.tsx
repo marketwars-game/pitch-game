@@ -1,8 +1,8 @@
 // =====================================================
 // FILE: src/components/presenter/PresenterView.tsx
 // PROJECT: pitch-game
-// TASK: T4 — Presenter View
-// VERSION: T4-v1
+// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
+// VERSION: T7-v1
 // CREATED: 2026-05-05 (T0-v2 placeholder)
 // LAST MODIFIED: 2026-05-07
 // PURPOSE: Top-level Presenter component.
@@ -16,6 +16,9 @@
 //          space to begin" mental model.
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): ห่อทุก phase ด้วย <PresenterStage> (fit-to-screen)
+//                       + ส่ง submissions ให้ PresenterJudgingScreen
+//                       state machine + usePresenterState เหมือนเดิมทุกอย่าง
 //   T4-v1 (2026-05-07): Replace T0-v2 placeholder with full Presenter
 //   T0-v2 (2026-05-06): Initial placeholder (page-wrapper refactor)
 // =====================================================
@@ -25,6 +28,7 @@
 import { useEffect, useState } from 'react';
 import { usePresenterState } from '@/hooks/usePresenterState';
 import { LANDING_DISMISS_KEYS } from '@/lib/presenter-config';
+import { PresenterStage } from './PresenterStage';
 import { PresenterLandingScreen } from './PresenterLandingScreen';
 import { PresenterLobbyScreen } from './PresenterLobbyScreen';
 import { PresenterWritingScreen } from './PresenterWritingScreen';
@@ -56,18 +60,18 @@ export function PresenterView() {
   // Phase 0
   if (showLanding) {
     return (
-      <div className="presenter-stage">
+      <PresenterStage>
         <PresenterLandingScreen />
-      </div>
+      </PresenterStage>
     );
   }
 
   // Loading state — render LOBBY shell with empty data so layout doesn't flash
   if (loading || !game) {
     return (
-      <div className="presenter-stage">
+      <PresenterStage>
         <PresenterLobbyScreen players={[]} newPlayerIds={new Set()} />
-      </div>
+      </PresenterStage>
     );
   }
 
@@ -87,7 +91,7 @@ export function PresenterView() {
       );
       break;
     case 'JUDGING':
-      inner = <PresenterJudgingScreen />;
+      inner = <PresenterJudgingScreen submissions={submissions} />;
       break;
     case 'RESULTS':
       inner = (
@@ -102,5 +106,5 @@ export function PresenterView() {
       inner = <PresenterLobbyScreen players={players} newPlayerIds={newPlayerIds} />;
   }
 
-  return <div className="presenter-stage">{inner}</div>;
+  return <PresenterStage>{inner}</PresenterStage>;
 }
