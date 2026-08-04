@@ -1,16 +1,25 @@
 // =====================================================
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
-// TASK: T5 — Performance Fix (Realtime → Polling)
-// VERSION: T5-v4
+// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
+// VERSION: T7-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-05-07
+// LAST MODIFIED: 2026-08-04
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
 //   State 8: full results (vibrant + watermark + sparkles + 3 judge cards + rank)
 //   State 9: not playing (faded "การแข่งขันสิ้นสุด")
 //   คำนวณ rank โดย POLL submissions ทุก 5 วินาที (T5-v4: เปลี่ยนจาก realtime)
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): องก์ 1 + ชื่อกรรมการใหม่ + เรียงอันดับผ่าน ranking.ts
+//                        - เพิ่มบล็อกแชท "พี่เก่งตอบกลับแล้ว" ไว้เหนือคะแนน
+//                          (ข้อความของผู้เล่น → ข้อความพี่เก่ง อ่านเป็นบทสนทนา)
+//                        - The Analyst/Creative → The Professor / พี่เก่ง
+//                        - คะแนนกรรมการแสดง 1 ทศนิยม (สเกลใหม่ 0-100 หารสิบมาแล้ว)
+//                        - useRank ใช้ compareRank จาก ranking.ts (มีกติกาตัดสินเสมอ)
+//                          และ select submitted_at เพิ่มเพื่อใช้ตัดสินชั้นสุดท้าย
+//                        - watermark เป็น DIME × KTC
+//                        polling 5 วิ ของ T5-v4 คงเดิมทุกอย่าง
 //   T5-v4 (2026-05-07): P0 — Replace useRank realtime subscription with polling
 //                        Reason: 100 players × 1 channel + N broadcasts ที่ judge เสร็จ
 //                        จะ saturate Supabase free tier realtime (200 quota)
@@ -38,7 +47,14 @@
 
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
-import type { SubmissionRow, SubmissionScores } from '@/lib/types';
+import type { SubmissionRow } from '@/lib/types';
+import { compareRank, resolveFinalScore } from '@/lib/ranking';
+import {
+  ChatSurface,
+  KengBubble,
+  MyBubble,
+  KengChatStyles,
+} from './KengChat';
 
 interface ResultsScreenProps {
   gameId: string;
@@ -100,8 +116,9 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
 
   // ---------- variant === 'full' ----------
   const scores = submission?.scores ?? null;
-  const finalScore = scores?.finalScore ?? computeFinalScore(scores);
+  const finalScore = resolveFinalScore(scores);
   const isAutoSubmitted = submission?.auto_submitted ?? false;
+  const kengReply = scores?.creative?.reply ?? null;
 
   return (
     <div
@@ -138,14 +155,48 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
             WebkitBackdropFilter: 'blur(6px)',
           }}
         >
-          <span style={{ color: '#5DF591' }}>DIME × AI</span>
+          <span style={{ color: '#5DF591' }}>DIME × KTC</span>
           <span style={{ color: '#71717A', fontWeight: 400 }}>·</span>
-          <span style={{ color: '#3B7DFF' }}>MONEY EXPO 2026</span>
+          <span style={{ color: '#3B7DFF' }}>INVESTMENT MADE SIMPLE</span>
         </span>
       </div>
 
       {/* Content แบบ scroll ได้ */}
       <div style={{ padding: '4px 16px 16px', overflowY: 'auto', height: 'calc(100% - 36px)' }}>
+        <KengChatStyles />
+
+        {/* องก์ 1 — พี่เก่งตอบกลับแล้ว (อยู่เหนือคะแนนเสมอ) */}
+        <div style={{ position: 'relative', zIndex: 2, marginBottom: 14 }}>
+          <div
+            style={{
+              fontSize: 9,
+              letterSpacing: 1.6,
+              color: '#FF8C42',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              margin: '2px 0 7px',
+            }}
+          >
+            องก์ 1 · พี่เก่งตอบกลับแล้ว
+          </div>
+          <ChatSurface
+            style={{
+              flex: 'none',
+              borderRadius: 14,
+              padding: 11,
+              overflow: 'hidden',
+              background: 'linear-gradient(180deg, #A9C7E8, #C4DCF1)',
+            }}
+          >
+            {submission?.pitch && (
+              <MyBubble compact>{submission.pitch}</MyBubble>
+            )}
+            <KengBubble>
+              {kengReply ?? 'พี่อ่านแล้วนะ ขอเก็บไปคิดก่อน เดี๋ยวพี่มาคุยต่อ 🙏'}
+            </KengBubble>
+          </ChatSurface>
+        </div>
+
         {/* Rank pill */}
         <div style={{ textAlign: 'center', position: 'relative', zIndex: 2 }}>
           <div
@@ -244,20 +295,23 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
         {/* Judge cards 3 ใบ */}
         <JudgeCard
           variant="analyst"
-          icon="📊"
-          name="The Analyst"
+          icon="🎓"
+          name="The Professor"
+          role="อาจารย์การเงิน"
           score={scores?.analyst}
         />
         <JudgeCard
           variant="creative"
-          icon="✨"
-          name="The Creative"
+          icon="🧡"
+          name="พี่เก่ง"
+          role="คนที่ได้รับข้อความ"
           score={scores?.creative}
         />
         <JudgeCard
           variant="communicator"
           icon="💬"
           name="The Communicator"
+          role="เพื่อนที่อ่านแชท"
           score={scores?.communicator}
         />
 
@@ -275,7 +329,7 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
             zIndex: 2,
           }}
         >
-          ดู Leaderboard เต็มได้บนจอใหญ่
+          ดูอันดับทั้งหมดได้บนจอใหญ่
         </div>
       </div>
     </div>
@@ -295,11 +349,13 @@ function JudgeCard({
   variant,
   icon,
   name,
+  role,
   score,
 }: {
   variant: 'analyst' | 'creative' | 'communicator';
   icon: string;
   name: string;
+  role: string;
   score?: { score: number; comment: string };
 }) {
   const c = JUDGE_COLORS[variant];
@@ -343,11 +399,12 @@ function JudgeCard({
         >
           {icon}
         </span>
-        {name}
+        <span>{name}</span>
+        <span style={{ fontSize: 9.5, color: '#71717A', fontWeight: 600 }}>{role}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <span style={{ fontSize: 24, fontWeight: 800, color: c.brand, letterSpacing: '-0.5px' }}>
-          {hasScore ? score.score : '—'}
+          {hasScore ? score.score.toFixed(1) : '—'}
         </span>
         <span style={{ fontSize: 11, color: '#71717A' }}>/ 10</span>
       </div>
@@ -414,15 +471,7 @@ function Sparkles() {
 // =====================================================
 // Helpers
 // =====================================================
-function computeFinalScore(scores: SubmissionScores | null): number | null {
-  if (!scores) return null;
-  const arr = [scores.analyst?.score, scores.creative?.score, scores.communicator?.score].filter(
-    (s): s is number => typeof s === 'number'
-  );
-  if (arr.length === 0) return null;
-  const avg = arr.reduce((sum, s) => sum + s, 0) / arr.length;
-  return Math.round(avg * 10) / 10;
-}
+// T7: computeFinalScore ย้ายไป @/lib/ranking.ts (ใช้ร่วมกับจอใหญ่ + admin)
 
 /**
  * Compute rank ของ player ปัจจุบัน — POLL ทุก 5 วินาที (T5-v4)
@@ -453,35 +502,33 @@ function useRank(gameId: string, mySubmissionId: string | null) {
     let cancelled = false;
 
     const compute = async () => {
+      // T7: select submitted_at เพิ่ม — ใช้ตัดสินเสมอชั้นสุดท้าย
       const { data, error } = await supabase
         .from('submissions')
-        .select('id, scores')
+        .select('id, scores, submitted_at')
         .eq('game_id', gameId);
 
       if (cancelled || error || !data) return;
 
-      // Cast เป็น row type ที่ select มา (id + scores) เพื่อให้ TypeScript รู้จัก fields
-      type RankRow = Pick<SubmissionRow, 'id' | 'scores'>;
+      type RankRow = Pick<SubmissionRow, 'id' | 'scores' | 'submitted_at'>;
       const rows = data as unknown as RankRow[];
 
-      const withScore = rows
-        .map((row) => ({
-          id: row.id,
-          finalScore: computeFinalScore(row.scores ?? null),
-        }))
-        .filter((r): r is { id: string; finalScore: number } => r.finalScore !== null);
+      // T7: เรียงด้วย compareRank กลาง (finalScore → พี่เก่ง → Professor → ส่งก่อน)
+      const scored = rows
+        .filter((row) => resolveFinalScore(row.scores ?? null) !== null)
+        .sort((a, b) =>
+          compareRank(
+            { scores: a.scores, submittedAt: a.submitted_at },
+            { scores: b.scores, submittedAt: b.submitted_at }
+          )
+        );
 
-      withScore.sort((a, b) => b.finalScore - a.finalScore);
-
-      const myIndex = withScore.findIndex((r) => r.id === mySubmissionId);
+      const myIndex = scored.findIndex((r) => r.id === mySubmissionId);
       setRank(myIndex >= 0 ? myIndex + 1 : null);
       setTotal(rows.length);
     };
 
-    // Initial fetch ทันที (ไม่รอ 5 วิ)
     compute();
-
-    // Poll ทุก 5 วินาที
     const intervalId = setInterval(compute, 5000);
 
     return () => {

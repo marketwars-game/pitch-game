@@ -1,14 +1,17 @@
 // =====================================================
 // FILE: src/components/player/PlayerView.tsx
 // PROJECT: pitch-game
-// TASK: T5 — Performance Fix (Pass phase to usePlayer)
-// VERSION: T5-v2
+// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
+// VERSION: T7-v1
 // CREATED: 2026-05-05
 // LAST MODIFIED: 2026-05-07
 // PURPOSE: Player View main component — orchestrate hooks + route ไป screen ตาม phase
 //   Load global mesh-bg ทุก state เพื่อ visual consistency
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): JUDGING ไม่ห่อด้วย ScrollBody แล้ว (padding 16 ทำให้หน้าแชท
+//                       ไม่ full-bleed) + ส่ง pitch/caseName ให้ JudgingScreen
+//                       phase routing + hooks อื่นไม่เปลี่ยน
 //   T5-v2 (2026-05-07): P1 follow-up — pass phase to usePlayer
 //                        usePlayer T5-v4 รับ phase prop แทน subscribe games เอง
 //                        - คงสามารถ detect reset (any → LOBBY transition) ได้
@@ -169,9 +172,17 @@ export function PlayerView() {
         <Screen>
           <MeshBg />
           <GlobalStyles />
-          <ScrollBody>
-            <JudgingScreen variant={submission ? 'waiting' : 'not-playing'} />
-          </ScrollBody>
+          {submission ? (
+            <JudgingScreen
+              variant="waiting"
+              pitch={submission.pitch}
+              caseName={game.stock?.name}
+            />
+          ) : (
+            <ScrollBody>
+              <JudgingScreen variant="not-playing" />
+            </ScrollBody>
+          )}
         </Screen>
       );
 

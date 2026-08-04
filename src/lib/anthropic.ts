@@ -2,7 +2,7 @@
 // FILE: src/lib/anthropic.ts
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v2
+// VERSION: T7-v3
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-08-04
 // PURPOSE: Anthropic SDK client + retry helper + Tool Use forced JSON
@@ -12,6 +12,8 @@
 //   - ✨ T5-v2: Tool Use forced (tool_choice='tool') — guarantee JSON shape
 //
 // CHANGE LOG:
+//   T7-v3 (2026-08-04): คำอธิบาย field reply/comment ย้ำว่าทำหน้าที่ต่างกัน
+//                       reply = แชทล้วน ห้ามพูดถึงคะแนน (ตรรกะไม่เปลี่ยน)
 //   T7-v2 (2026-08-04): เปลี่ยนคำอธิบาย field reply — กรรมการคนที่ 2 คือ "พี่เก่ง"
 //                       ไม่ใช่ "The Skeptic" (ตรรกะไม่เปลี่ยน)
 //   T7-v1 (2026-08-04): สเกลคะแนน 1-10 → 0-100 (แก้ปัญหาคะแนนตันเท่ากันตอนคนเยอะ)
@@ -76,13 +78,14 @@ const SUBMIT_JUDGMENT_TOOL: Anthropic.Tool = {
       comment: {
         type: 'string',
         description:
-          'คอมเมนต์ภาษาไทย 1-2 ประโยค ตามคาแรกเตอร์ที่กำหนด ห้ามเกิน 2 ประโยค',
+          'คอมเมนต์ภาษาไทย 1-2 ประโยค ตามคาแรกเตอร์ที่กำหนด ห้ามเกิน 2 ประโยค ' +
+          'สำหรับพี่เก่ง: ต้องเป็นเหตุผลของคะแนน และห้ามพูดซ้ำสิ่งที่เขียนใน reply',
       },
       reply: {
         type: 'string',
         description:
-          'เฉพาะพี่เก่ง — ข้อความที่พี่เก่งพิมพ์ตอบกลับในไลน์ 1-2 ประโยค ภาษาพูด ' +
-          'กรรมการคนอื่นไม่ต้องส่ง field นี้',
+          'เฉพาะพี่เก่ง — ข้อความที่พี่เก่งพิมพ์ตอบกลับในไลน์ 1-2 ประโยค ภาษาพูดล้วน ' +
+          'ห้ามพูดถึงคะแนนหรือการตัดสินใน field นี้ · กรรมการคนอื่นไม่ต้องส่ง field นี้',
       },
     },
     required: ['score', 'comment'],

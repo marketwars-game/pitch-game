@@ -1,16 +1,20 @@
 // =====================================================
 // FILE: src/components/player/LobbyScreen.tsx
 // PROJECT: pitch-game
-// TASK: T1 — Player View + Realtime
-// VERSION: T1-v1
+// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
+// VERSION: T7-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-05-06
+// LAST MODIFIED: 2026-08-04
 // PURPOSE: Lobby screen — รองรับ 3 states จาก mockup-v5:
 //          State 1: empty (join form)
 //          State 2: joined (รอเกมเริ่ม)
 //          State 3: blocked (late join — phase ≠ LOBBY แต่ไม่มี player)
 //
 // CHANGE LOG:
+//   T7-v1 (2026-08-04): เปลี่ยนชื่อเกม + แบรนด์เป็น DIME × KTC
+//                       - HeroBlock: neural network → hero แบบแชท (ชื่อเกม + คำโปรย)
+//                       - ปุ่ม/คำโปรยเปลี่ยนภาษาให้เข้ากับเกมใหม่
+//                       ตรรกะ join + useLivePlayerCount ไม่เปลี่ยน
 //   T1-v1 (2026-05-06): Initial — neural network hero + join form + frosted cards
 // =====================================================
 'use client';
@@ -124,7 +128,7 @@ export function LobbyScreen({
             รอเกมเริ่ม
           </div>
           <div style={{ fontSize: 13, color: '#A1A1AA', lineHeight: 1.55 }}>
-            Presenter จะกดเริ่มเกมในไม่ช้า
+            อีกสักครู่ MC จะกดเริ่ม แล้วพี่เก่งจะทักมา
           </div>
         </div>
 
@@ -173,7 +177,7 @@ export function LobbyScreen({
             if (e.key === 'Enter') handleJoin();
           }}
           maxLength={NICKNAME_MAX_LENGTH}
-          placeholder="ใส่ชื่อเล่นของคุณ"
+          placeholder="ชื่อเล่นของคุณ (คนอื่นเห็นบนจอ)"
           disabled={joining}
           style={{
             width: '100%',
@@ -210,7 +214,7 @@ export function LobbyScreen({
           transition: 'background 0.15s',
         }}
       >
-        {joining ? 'กำลังเข้าร่วม...' : 'เข้าร่วมเกม'}
+        {joining ? 'กำลังเข้าห้อง...' : 'เข้าห้อง'}
       </button>
 
       {joinError && (
@@ -243,144 +247,67 @@ function HeroBlock() {
     <div
       style={{
         position: 'relative',
-        height: 200,
-        marginTop: 16,
-        marginBottom: 8,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
+        marginTop: 26,
+        marginBottom: 10,
+        textAlign: 'center',
+        boxSizing: 'border-box',
       }}
     >
-      <NeuralNetwork />
-      <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-        <div
+      {/* แสงพื้นหลังโทนเขียวแชท */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: '-40px -20px',
+          background:
+            'radial-gradient(ellipse 60% 55% at 50% 30%, rgba(6,193,103,0.20), transparent 65%)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        <span
           style={{
-            fontSize: 13,
+            display: 'inline-block',
+            fontSize: 10,
             fontWeight: 800,
-            color: '#5DF591',
-            letterSpacing: 3,
-            marginBottom: 14,
+            color: '#0b2b18',
+            background: '#5DF591',
+            borderRadius: 999,
+            padding: '4px 12px',
+            letterSpacing: 0.4,
+            marginBottom: 16,
           }}
         >
-          DIME × AI
+          ◆ INVESTMENT MADE SIMPLE
+        </span>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            color: '#71717A',
+            letterSpacing: 2.4,
+            marginBottom: 8,
+          }}
+        >
+          ด่านสุดท้ายของคลาสวันนี้
         </div>
         <div
           style={{
-            fontSize: 26,
+            fontSize: 34,
             fontWeight: 800,
             color: '#FFFFFF',
-            letterSpacing: '-0.6px',
+            letterSpacing: '-1px',
+            lineHeight: 1.12,
             marginBottom: 10,
-            lineHeight: 1.15,
           }}
         >
-          AI Stock Pitch Battle
+          LINE หา<span style={{ color: '#06C167' }}>พี่เก่ง</span>
         </div>
-        <div
-          style={{
-            fontSize: 15,
-            fontWeight: 800,
-            color: '#3B7DFF',
-            letterSpacing: 1.2,
-          }}
-        >
-          MONEY EXPO 2026
+        <div style={{ fontSize: 13, color: '#A1A1AA', lineHeight: 1.6 }}>
+          พี่เก่งอยากเริ่มลงทุน แต่ไม่กล้าสักที
+          <br />
+          คุณมีข้อความเดียวที่จะเปลี่ยนใจแก
         </div>
       </div>
-    </div>
-  );
-}
-
-function NeuralNetwork() {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        opacity: 0.65,
-      }}
-    >
-      <svg viewBox="0 0 280 200" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-        {/* เส้นเชื่อม */}
-        {[
-          ['40', '60', '140', '100'],
-          ['240', '60', '140', '100'],
-          ['40', '60', '240', '60'],
-          ['60', '140', '140', '100'],
-          ['220', '140', '140', '100'],
-          ['60', '140', '220', '140'],
-          ['100', '40', '40', '60'],
-          ['180', '40', '240', '60'],
-          ['100', '40', '180', '40'],
-          ['20', '100', '40', '60'],
-          ['260', '100', '240', '60'],
-          ['20', '100', '60', '140'],
-          ['260', '100', '220', '140'],
-          ['140', '170', '60', '140'],
-          ['140', '170', '220', '140'],
-        ].map(([x1, y1, x2, y2], i) => (
-          <line
-            key={i}
-            x1={x1}
-            y1={y1}
-            x2={x2}
-            y2={y2}
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth={1}
-            fill="none"
-          />
-        ))}
-
-        {/* Pulse particles เดินทางตามเส้น */}
-        <circle r="2.5" fill="#3B7DFF" filter="drop-shadow(0 0 4px #3B7DFF)">
-          <animateMotion dur="3s" repeatCount="indefinite" path="M40,60 L140,100" />
-        </circle>
-        <circle r="2.5" fill="#8B5CF6" filter="drop-shadow(0 0 4px #8B5CF6)">
-          <animateMotion dur="3s" repeatCount="indefinite" begin="0.7s" path="M240,60 L140,100" />
-        </circle>
-        <circle r="2.5" fill="#5DF591" filter="drop-shadow(0 0 4px #5DF591)">
-          <animateMotion dur="3s" repeatCount="indefinite" begin="1.4s" path="M60,140 L140,100" />
-        </circle>
-        <circle r="2" fill="#3B7DFF" filter="drop-shadow(0 0 4px #3B7DFF)">
-          <animateMotion dur="3.5s" repeatCount="indefinite" begin="2.1s" path="M220,140 L140,100" />
-        </circle>
-        <circle r="2" fill="#8B5CF6" filter="drop-shadow(0 0 4px #8B5CF6)">
-          <animateMotion dur="4s" repeatCount="indefinite" begin="0.3s" path="M40,60 L240,60" />
-        </circle>
-        <circle r="2" fill="#5DF591" filter="drop-shadow(0 0 4px #5DF591)">
-          <animateMotion dur="4s" repeatCount="indefinite" begin="1.8s" path="M60,140 L220,140" />
-        </circle>
-
-        {/* Nodes พื้นหลัง (สีจาง) */}
-        {[
-          [100, 40],
-          [180, 40],
-          [20, 100],
-          [260, 100],
-          [140, 170],
-        ].map(([cx, cy], i) => (
-          <circle
-            key={i}
-            cx={cx}
-            cy={cy}
-            r={2}
-            fill="rgba(255,255,255,0.04)"
-            stroke="rgba(255,255,255,0.12)"
-            strokeWidth={1}
-          />
-        ))}
-
-        {/* Nodes สี accent (เด่น) */}
-        <circle cx="40" cy="60" r="3.5" fill="#3B7DFF" stroke="#3B7DFF" filter="drop-shadow(0 0 4px #3B7DFF)" />
-        <circle cx="240" cy="60" r="3.5" fill="#8B5CF6" stroke="#8B5CF6" filter="drop-shadow(0 0 4px #8B5CF6)" />
-        <circle cx="60" cy="140" r="3" fill="#5DF591" stroke="#5DF591" filter="drop-shadow(0 0 4px #5DF591)" />
-        <circle cx="220" cy="140" r="3" fill="#5DF591" stroke="#5DF591" filter="drop-shadow(0 0 4px #5DF591)" />
-        <circle cx="140" cy="100" r="4" fill="#3B7DFF" stroke="#3B7DFF" filter="drop-shadow(0 0 4px #3B7DFF)" />
-      </svg>
     </div>
   );
 }
@@ -475,9 +402,9 @@ function Watermark() {
           WebkitBackdropFilter: 'blur(6px)',
         }}
       >
-        <span style={{ color: '#5DF591' }}>DIME × AI</span>
+        <span style={{ color: '#5DF591' }}>DIME × KTC</span>
         <span style={{ color: '#71717A', fontWeight: 400 }}>·</span>
-        <span style={{ color: '#3B7DFF' }}>MONEY EXPO 2026</span>
+        <span style={{ color: '#3B7DFF' }}>INVESTMENT MADE SIMPLE</span>
       </span>
     </div>
   );
