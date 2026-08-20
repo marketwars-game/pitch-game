@@ -2,7 +2,7 @@
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
 // TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
-// VERSION: T8-v1
+// VERSION: T8-v2
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-08-20
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
@@ -11,6 +11,7 @@
 //   คำนวณ rank โดย POLL submissions ทุก 5 วินาที (T5-v4: เปลี่ยนจาก realtime)
 //
 // CHANGE LOG:
+//   T8-v2 (2026-08-21): fallback reply องก์ 1 → ตรงกับ FALLBACK_REPLY ใหม่ใน route.ts
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น + แบรนด์ DIME × SCG (ไม่แตะ logic)
 //   T7-v2 (2026-08-04): คะแนนรวมของผู้เล่นแสดง 2 ทศนิยม (เดิม 1)
 //                       เพื่อให้ตรงกับ podium บนจอใหญ่และหน้า admin
@@ -197,7 +198,7 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
               <MyBubble compact>{submission.pitch}</MyBubble>
             )}
             <KengBubble>
-              {kengReply ?? 'พี่อ่านแล้วนะ ขอเก็บไปคิดก่อน เดี๋ยวพี่มาคุยต่อ 🙏'}
+              {kengReply ?? 'เดี๋ยวพี่ขอดูหน้างานก่อนนะครับหัวหน้า 🙏'}
             </KengBubble>
           </ChatSurface>
         </div>

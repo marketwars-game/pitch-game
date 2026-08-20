@@ -2,7 +2,7 @@
 // FILE: src/components/player/KengChat.tsx
 // PROJECT: pitch-game
 // TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
-// VERSION: T8-v1
+// VERSION: T8-v2
 // CREATED: 2026-08-04
 // LAST MODIFIED: 2026-08-20
 // PURPOSE: ชิ้นส่วนหน้าจอแชทแบบ LINE — ใช้ร่วมกัน 3 หน้าจอ
@@ -13,6 +13,7 @@
 //          ทุก block ที่ width:100% + padding ต้องใส่ boxSizing: 'border-box' เอง
 //
 // CHANGE LOG:
+//   T8-v2 (2026-08-21): อวาตาร์ KengBubble ก → ม (ใช้ร่วมทุกจอมือถือ)
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น + โจทย์ใหม่ (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): Initial
 // =====================================================
@@ -203,7 +204,7 @@ export function KengBubble({
           visibility: showAvatar ? 'visible' : 'hidden',
         }}
       >
-        ก
+        ม
       </div>
       <div
         style={{
