@@ -1,16 +1,17 @@
 // =====================================================
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
-// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v2
+// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
+// VERSION: T8-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-04
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
 //   State 8: full results (vibrant + watermark + sparkles + 3 judge cards + rank)
 //   State 9: not playing (faded "การแข่งขันสิ้นสุด")
 //   คำนวณ rank โดย POLL submissions ทุก 5 วินาที (T5-v4: เปลี่ยนจาก realtime)
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): strings เคสพี่มั่น + แบรนด์ DIME × SCG (ไม่แตะ logic)
 //   T7-v2 (2026-08-04): คะแนนรวมของผู้เล่นแสดง 2 ทศนิยม (เดิม 1)
 //                       เพื่อให้ตรงกับ podium บนจอใหญ่และหน้า admin
 //                       ผู้เล่นจะได้ไม่สงสัยว่าทำไมตัวเองกับเพื่อนคะแนนเท่ากัน
@@ -159,9 +160,9 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
             WebkitBackdropFilter: 'blur(6px)',
           }}
         >
-          <span style={{ color: '#5DF591' }}>DIME × KTC</span>
+          <span style={{ color: '#5DF591' }}>DIME × SCG</span>
           <span style={{ color: '#71717A', fontWeight: 400 }}>·</span>
-          <span style={{ color: '#3B7DFF' }}>INVESTMENT MADE SIMPLE</span>
+          <span style={{ color: '#3B7DFF' }}>DRIVING EXECUTION & CHANGE MANAGEMENT</span>
         </span>
       </div>
 
@@ -169,7 +170,7 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
       <div style={{ padding: '4px 16px 16px', overflowY: 'auto', height: 'calc(100% - 36px)' }}>
         <KengChatStyles />
 
-        {/* องก์ 1 — พี่เก่งตอบกลับแล้ว (อยู่เหนือคะแนนเสมอ) */}
+        {/* องก์ 1 — พี่มั่นตอบกลับแล้ว (อยู่เหนือคะแนนเสมอ) */}
         <div style={{ position: 'relative', zIndex: 2, marginBottom: 14 }}>
           <div
             style={{
@@ -181,7 +182,7 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
               margin: '2px 0 7px',
             }}
           >
-            องก์ 1 · พี่เก่งตอบกลับแล้ว
+            องก์ 1 · พี่มั่นตอบกลับแล้ว
           </div>
           <ChatSurface
             style={{
@@ -307,7 +308,7 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
         <JudgeCard
           variant="creative"
           icon="🧡"
-          name="พี่เก่ง"
+          name="พี่มั่น"
           role="คนที่ได้รับข้อความ"
           score={scores?.creative}
         />
@@ -517,7 +518,7 @@ function useRank(gameId: string, mySubmissionId: string | null) {
       type RankRow = Pick<SubmissionRow, 'id' | 'scores' | 'submitted_at'>;
       const rows = data as unknown as RankRow[];
 
-      // T7: เรียงด้วย compareRank กลาง (finalScore → พี่เก่ง → Professor → ส่งก่อน)
+      // T8: เรียงด้วย compareRank กลาง (finalScore → พี่มั่น → Professor → ส่งก่อน)
       const scored = rows
         .filter((row) => resolveFinalScore(row.scores ?? null) !== null)
         .sort((a, b) =>

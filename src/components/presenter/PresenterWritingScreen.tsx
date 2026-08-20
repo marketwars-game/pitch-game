@@ -1,17 +1,18 @@
 // =====================================================
 // FILE: src/components/presenter/PresenterWritingScreen.tsx
 // PROJECT: pitch-game
-// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
+// VERSION: T8-v1
 // CREATED: 2026-05-07
-// LAST MODIFIED: 2026-08-04
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: จอตอนผู้เล่นกำลังเขียน 5 นาที
-//          - ข้อความพี่เก่งเป็นบับเบิลแชทแบบเดียวกับที่ทุกคนเห็นในมือถือ
+//          - ข้อความพี่มั่นเป็นบับเบิลแชทแบบเดียวกับที่ทุกคนเห็นในมือถือ
 //          - เครื่องมือ 7 ชิ้นเป็นแถบล่างเต็มความกว้าง (อ่านจากท้ายห้องได้)
 //          - วงแหวนจำนวนคนที่ส่งแล้ว แทนแถบ progress เดิม
 //          - โหมดเตือน 30 วิสุดท้าย เปลี่ยนโทนทั้งจอ ไม่ใช่แค่ตัวเลข
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): strings เคสพี่มั่น — โจทย์จอใหญ่ + อวาตาร์ ม + อายุ 52 + หัวกล่องหลักผู้นำ (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เขียนใหม่ — เดิมเป็น "Pitch หุ้น X ให้ลูกฟัง" + countdown 200px
 //                       นาฬิกาย่อเหลือ 132px เพื่อแบ่งพื้นที่ให้เคสกับเครื่องมือ
 //   T4-v2 (2026-05-07): Pass totalSeconds from game.config
@@ -65,9 +66,9 @@ export function PresenterWritingScreen({ game, players, submissions }: Props) {
 
         <div className="t7-w-head">
           <div className="t7-w-title">
-            พิมพ์ LINE ตอบ{caseData?.name ?? 'พี่เก่ง'} 1 ข้อความ
+            พิมพ์ LINE ตอบ{caseData?.name ?? 'พี่มั่น'} 1 ข้อความ
             <br />
-            <b>ให้แกกล้าเริ่มก้าวแรกวันนี้</b>
+            <b>ให้แกเปิดใจลองก้าวแรก</b> · ห้ามสั่ง ห้ามขู่ ห้ามอ้างนโยบาย
           </div>
           <div className="t7-clockwrap">
             <div className="t7-clock-label">เวลาที่เหลือ</div>
@@ -76,15 +77,15 @@ export function PresenterWritingScreen({ game, players, submissions }: Props) {
         </div>
 
         <div className="t7-w-mid">
-          {/* ---------- ซ้าย: แชทพี่เก่ง ---------- */}
+          {/* ---------- ซ้าย: แชทพี่มั่น ---------- */}
           <div className="t7-chatcol">
             {chat.map((line, i) => (
               <div key={i} className={`t7-msgrow t7-msgrow--${i + 1}`}>
-                <div className={`t7-ava${i > 0 ? ' t7-ava--hidden' : ''}`}>ก</div>
+                <div className={`t7-ava${i > 0 ? ' t7-ava--hidden' : ''}`}>ม</div>
                 <div>
                   {i === 0 && (
                     <div className="t7-who">
-                      {caseData?.name ?? 'พี่เก่ง'} · {caseData?.age ?? 42}
+                      {caseData?.name ?? 'พี่มั่น'} · {caseData?.age ?? 52}
                     </div>
                   )}
                   <div className="t7-bub">{line}</div>
@@ -136,9 +137,9 @@ export function PresenterWritingScreen({ game, players, submissions }: Props) {
         {/* ---------- ล่าง: กล่องเครื่องมือ ---------- */}
         <div className="t7-toolbar">
           <div className="t7-toolhead">
-            <span className="t7-toolhead-lbl">กล่องเครื่องมือจากคลาสวันนี้</span>
+            <span className="t7-toolhead-lbl">หลักผู้นำจาก session วันนี้</span>
             <span className="t7-toolhead-rule">
-              ใช้อย่างน้อย 1 ชิ้น · 2–3 ชิ้นมีคะแนนโบนัส
+              ใช้อย่างน้อย 1 ข้อ · 2–3 ข้อมีคะแนนโบนัส
             </span>
           </div>
           <div className="t7-tools">

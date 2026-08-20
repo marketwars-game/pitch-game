@@ -1,16 +1,17 @@
 // =====================================================
 // FILE: src/components/player/LobbyScreen.tsx
 // PROJECT: pitch-game
-// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
+// VERSION: T8-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-04
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: Lobby screen — รองรับ 3 states จาก mockup-v5:
 //          State 1: empty (join form)
 //          State 2: joined (รอเกมเริ่ม)
 //          State 3: blocked (late join — phase ≠ LOBBY แต่ไม่มี player)
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): strings เคสพี่มั่น + แบรนด์ DIME × SCG (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เปลี่ยนชื่อเกม + แบรนด์เป็น DIME × KTC
 //                       - HeroBlock: neural network → hero แบบแชท (ชื่อเกม + คำโปรย)
 //                       - ปุ่ม/คำโปรยเปลี่ยนภาษาให้เข้ากับเกมใหม่
@@ -128,7 +129,7 @@ export function LobbyScreen({
             รอเกมเริ่ม
           </div>
           <div style={{ fontSize: 13, color: '#A1A1AA', lineHeight: 1.55 }}>
-            อีกสักครู่ MC จะกดเริ่ม แล้วพี่เก่งจะทักมา
+            อีกสักครู่ MC จะกดเริ่ม แล้วพี่มั่นจะทักมา
           </div>
         </div>
 
@@ -277,7 +278,7 @@ function HeroBlock() {
             marginBottom: 16,
           }}
         >
-          ◆ INVESTMENT MADE SIMPLE
+          ◆ DRIVING EXECUTION & CHANGE MANAGEMENT
         </span>
         <div
           style={{
@@ -300,12 +301,12 @@ function HeroBlock() {
             marginBottom: 10,
           }}
         >
-          LINE หา<span style={{ color: '#06C167' }}>พี่เก่ง</span>
+          LINE หา<span style={{ color: '#06C167' }}>พี่มั่น</span>
         </div>
         <div style={{ fontSize: 13, color: '#A1A1AA', lineHeight: 1.6 }}>
-          พี่เก่งอยากเริ่มลงทุน แต่ไม่กล้าสักที
+          พี่มั่นไม่อยากเปลี่ยน
           <br />
-          คุณมีข้อความเดียวที่จะเปลี่ยนใจแก
+          คุณมีข้อความเดียวที่จะเปิดใจแก
         </div>
       </div>
     </div>
@@ -402,9 +403,9 @@ function Watermark() {
           WebkitBackdropFilter: 'blur(6px)',
         }}
       >
-        <span style={{ color: '#5DF591' }}>DIME × KTC</span>
+        <span style={{ color: '#5DF591' }}>DIME × SCG</span>
         <span style={{ color: '#71717A', fontWeight: 400 }}>·</span>
-        <span style={{ color: '#3B7DFF' }}>INVESTMENT MADE SIMPLE</span>
+        <span style={{ color: '#3B7DFF' }}>DRIVING EXECUTION & CHANGE MANAGEMENT</span>
       </span>
     </div>
   );

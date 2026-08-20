@@ -1,18 +1,19 @@
 // =====================================================
 // FILE: src/components/player/KengChat.tsx
 // PROJECT: pitch-game
-// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
+// VERSION: T8-v1
 // CREATED: 2026-08-04
-// LAST MODIFIED: 2026-08-04
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: ชิ้นส่วนหน้าจอแชทแบบ LINE — ใช้ร่วมกัน 3 หน้าจอ
-//          WritingScreen (เขียน) · JudgingScreen (รอพี่เก่งอ่าน) · ResultsScreen (องก์ 1)
+//          WritingScreen (เขียน) · JudgingScreen (รอพี่มั่นอ่าน) · ResultsScreen (องก์ 1)
 //          เลียนแบบเลย์เอาต์อย่างเดียว ไม่ใช้โลโก้/เครื่องหมายการค้าของ LINE
 //
 // หมายเหตุ Lesson 27: Tailwind v4 ไม่ apply universal box-sizing reset
 //          ทุก block ที่ width:100% + padding ต้องใส่ boxSizing: 'border-box' เอง
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): strings เคสพี่มั่น + โจทย์ใหม่ (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): Initial
 // =====================================================
 'use client';
@@ -164,7 +165,7 @@ export function ChatDay({ label }: { label: string }) {
 }
 
 // =====================================================
-// บับเบิลของพี่เก่ง (ฝั่งซ้าย)
+// บับเบิลของพี่มั่น (ฝั่งซ้าย)
 // =====================================================
 export function KengBubble({
   children,
@@ -316,7 +317,7 @@ export function TaskNote({ rules }: { rules: string[] }) {
       }}
     >
       <div style={{ color: '#B25510', fontWeight: 800, marginBottom: 3 }}>
-        โจทย์ — พิมพ์ตอบพี่เก่ง 1 ข้อความ ให้แกกล้าเริ่มก้าวแรกวันนี้
+        โจทย์ — พิมพ์ตอบพี่มั่น 1 ข้อความ ให้แกเปิดใจลองก้าวแรก (ห้ามสั่ง ห้ามขู่ ห้ามอ้างนโยบาย)
       </div>
       {rules.map((r, i) => (
         <div key={i} style={{ display: 'flex', gap: 5 }}>
@@ -364,7 +365,7 @@ export function TypingBubble() {
 }
 
 // =====================================================
-// ชุดบับเบิลเปิดเรื่องของพี่เก่ง (จาก CaseData.chat)
+// ชุดบับเบิลเปิดเรื่องของพี่มั่น (จาก CaseData.chat)
 // =====================================================
 export function KengIntro({
   caseData,

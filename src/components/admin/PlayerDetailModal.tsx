@@ -2,9 +2,9 @@
 // FILE: src/components/admin/PlayerDetailModal.tsx
 // PROJECT: pitch-game
 // TASK: T3 — AI Judge API
-// VERSION: T7-v1
+// VERSION: T8-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-05-06
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: Modal — show full pitch + 3 judge scores + comments
 //          Used on stage during Top 3 reveal
 //          Auto-defaulted banner shown when admin should know AI failed
@@ -15,6 +15,7 @@
 //                 - state: idle | running | success | error
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): strings เคสพี่มั่น (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): ชื่อกรรมการใหม่ + แสดงข้อความที่พี่เก่งตอบกลับ (scores.creative.reply)
 //                       + คะแนนกรรมการ 1 ทศนิยม / finalScore 2 ทศนิยม
 //                       + หัวข้อ "Pitch" → "ข้อความที่ส่ง"
@@ -417,7 +418,7 @@ export function PlayerDetailModal({
               <JudgeCard
                 persona="creative"
                 icon="🧡"
-                name="พี่เก่ง"
+                name="พี่มั่น"
                 role="คนที่ได้รับข้อความ"
                 color="#FF8C42"
                 colorSoft="rgba(255,140,66,0.15)"
@@ -582,7 +583,7 @@ function JudgeCard({
         {score.comment}
       </div>
 
-      {/* T7: ข้อความที่พี่เก่งพิมพ์ตอบกลับ (มีเฉพาะ persona creative) */}
+      {/* T8: ข้อความที่พี่มั่นพิมพ์ตอบกลับ (มีเฉพาะ persona creative) */}
       {score.reply && (
         <div
           style={{

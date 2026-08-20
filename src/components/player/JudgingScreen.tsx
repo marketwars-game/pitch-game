@@ -1,18 +1,19 @@
 // =====================================================
 // FILE: src/components/player/JudgingScreen.tsx
 // PROJECT: pitch-game
-// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
+// VERSION: T8-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-04
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: หน้ารอตัดสิน — อยู่ในหน้าแชทเดิม ไม่ตัดไปหน้าอนิเมชันอื่น
 //          ใช้ "กำลังพิมพ์…" แบบ LINE ซึ่งจะกลายเป็นข้อความจริงของพี่เก่ง
 //          ในหน้าถัดไป (องก์ 1 ของการเฉลย) — ต่อเนื่องเป็นเรื่องเดียว
 //
-//          variant='waiting'      → ส่งแล้ว รอพี่เก่งอ่าน
+//          variant='waiting'      → ส่งแล้ว รอพี่มั่นอ่าน
 //          variant='not-playing'  → ไม่ได้ส่ง (คงพฤติกรรมเดิม)
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): strings เคสพี่มั่น (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เขียนใหม่เป็นหน้าแชท (เดิม: neural network SVG)
 //                       + รับ pitch/caseName เพื่อโชว์ข้อความของผู้เล่นค้างไว้
 //   T1-v1 (2026-05-06): Initial — neural network SVG + status dots
@@ -34,7 +35,7 @@ interface JudgingScreenProps {
 }
 
 export function JudgingScreen({ variant, pitch, caseName }: JudgingScreenProps) {
-  const name = caseName ?? 'พี่เก่ง';
+  const name = caseName ?? 'พี่มั่น';
 
   // ---------- ไม่ได้แข่งรอบนี้ (คงเดิม) ----------
   if (variant === 'not-playing') {
@@ -84,7 +85,7 @@ export function JudgingScreen({ variant, pitch, caseName }: JudgingScreenProps) 
     );
   }
 
-  // ---------- ส่งแล้ว รอพี่เก่งอ่าน ----------
+  // ---------- ส่งแล้ว รอพี่มั่นอ่าน ----------
   return (
     <div
       style={{
@@ -129,7 +130,7 @@ export function JudgingScreen({ variant, pitch, caseName }: JudgingScreenProps) 
               lineHeight: 1.65,
             }}
           >
-            อาจารย์การเงินกับเพื่อนที่อ่านแชท
+            วิทยากรกับเพื่อนที่อ่านแชท
             <br />
             ก็กำลังให้คะแนนอยู่เหมือนกัน
           </div>

@@ -1,12 +1,12 @@
 // =====================================================
 // FILE: src/components/player/WritingScreen.tsx
 // PROJECT: pitch-game
-// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
+// VERSION: T8-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-04
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: หน้าเขียน — หน้าจอแชทแบบ LINE
-//          - บับเบิลพี่เก่งเปิดเรื่อง + กล่องโจทย์ + บับเบิลเขียวของผู้เล่นแบบ live
+//          - บับเบิลพี่มั่นเปิดเรื่อง + กล่องโจทย์ + บับเบิลเขียวของผู้เล่นแบบ live
 //          - แถบเครื่องมือ 7 ชิ้น หดเองตอนคีย์บอร์ดเด้ง (Q1 = ก)
 //          - หลังส่งแล้ว ข้อความค้างไว้ให้อ่านทวน ช่องพิมพ์ปิด
 //
@@ -16,6 +16,7 @@
 //          - submitting / submitError states
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): strings เคสพี่มั่น (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เขียนใหม่เป็น LINE layout (เดิม: challenge box + StockCard)
 //                       - ใช้ชิ้นส่วนจาก KengChat.tsx + ToolTray.tsx
 //                       - เนื้อหาโจทย์มาจาก game.stock (CaseData)
@@ -125,7 +126,7 @@ export function WritingScreen({
       <KengChatStyles />
 
       <ChatHeader
-        name={caseData?.name ?? 'พี่เก่ง'}
+        name={caseData?.name ?? 'พี่มั่น'}
         status="ออนไลน์อยู่"
         right={<ChatTimer mmss={countdown.mmss} urgent={countdown.isUrgent} />}
       />
@@ -205,7 +206,7 @@ export function WritingScreen({
             onBlur={() => setTyping(false)}
             disabled={submitting || isSubmitted}
             placeholder={
-              isSubmitted ? 'ส่งไปแล้ว — แก้ไขไม่ได้' : 'พิมพ์ข้อความถึงพี่เก่ง…'
+              isSubmitted ? 'ส่งไปแล้ว — แก้ไขไม่ได้' : 'พิมพ์ข้อความถึงพี่มั่น…'
             }
             rows={1}
             style={{
@@ -290,9 +291,9 @@ function SentNote({ autoSubmitted }: { autoSubmitted: boolean }) {
       }}
     >
       <b style={{ color: '#046B3A', display: 'block', marginBottom: 2 }}>
-        {autoSubmitted ? '⏱ หมดเวลา — ระบบส่งให้อัตโนมัติ' : '✓ ส่งข้อความให้พี่เก่งแล้ว'}
+        {autoSubmitted ? '⏱ หมดเวลา — ระบบส่งให้อัตโนมัติ' : '✓ ส่งข้อความให้พี่มั่นแล้ว'}
       </b>
-      รอเพื่อนๆ ส่งให้ครบก่อนนะ แล้วเรามาดูกันว่าพี่เก่งจะตอบว่าอะไร
+      รอเพื่อนๆ ส่งให้ครบก่อนนะ แล้วเรามาดูกันว่าพี่มั่นจะตอบว่าอะไร
     </div>
   );
 }

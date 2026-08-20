@@ -1,18 +1,19 @@
 // =====================================================
 // FILE: src/components/presenter/PresenterResultsScreen.tsx
 // PROJECT: pitch-game
-// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
+// VERSION: T8-v1
 // CREATED: 2026-05-07
-// LAST MODIFIED: 2026-08-04
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: จอผลรอบสุดท้าย — รับใช้องก์ 2-3 ของการเฉลย
 //          - เปิดทีละขั้นด้วย SPACE/คลิก ให้ MC คุมจังหวะพากลุ้นเอง
 //            (state ฝั่ง client ล้วน ไม่แตะ DB / ไม่แตะ phase)
 //          - podium 3 แท่ง + คะแนนแยกรายกรรมการ
-//          - กล่องข้อความของแชมป์ + ข้อความที่พี่เก่งตอบกลับ (สำหรับ MC อ่านออกเสียง)
+//          - กล่องข้อความของแชมป์ + ข้อความที่พี่มั่นตอบกลับ (สำหรับ MC อ่านออกเสียง)
 //          - อันดับ 4-10
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): strings เคสพี่มั่น — headline ผล + อวาตาร์ ม + fallback reply ใหม่ (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เขียนใหม่ — staged reveal, ranking.ts, 2 ทศนิยม,
 //                       ข้อความแชมป์, ใช้ PresenterChrome แทน PresenterHeader
 //   T5-v1 (2026-05-07): Top 3 podium + Top 4-10 + gold confetti
@@ -76,7 +77,7 @@ export function PresenterResultsScreen({ game, players, submissions }: Props) {
   const podium = ranked.slice(0, PODIUM_TOP_N);
   const runners = ranked.slice(PODIUM_TOP_N, PODIUM_TOP_N + RUNNERS_TOP_N);
   const champ = podium[0] ?? null;
-  const kengName = game.stock?.name ?? 'พี่เก่ง';
+  const kengName = game.stock?.name ?? 'พี่มั่น';
 
   // ---------- การเปิดผลทีละขั้น ----------
   // 0 = ยังไม่เปิดอะไร · 1 = อันดับ 3 · 2 = อันดับ 2 · 3 = แชมป์
@@ -108,14 +109,14 @@ export function PresenterResultsScreen({ game, players, submissions }: Props) {
 
   const headline =
     step === 0
-      ? `ใครทำให้${kengName}กล้าเริ่มได้มากที่สุด`
+      ? `ใครทำให้${kengName}เปิดใจลองได้มากที่สุด`
       : step === 1
         ? 'อันดับ 3 …'
         : step === 2
           ? 'อันดับ 2 …'
           : step === 3
             ? 'แชมป์ของรอบนี้'
-            : `ใครทำให้${kengName}กล้าเริ่มได้มากที่สุด`;
+            : `ใครทำให้${kengName}เปิดใจลองได้มากที่สุด`;
 
   const cue =
     step === 0
@@ -150,13 +151,13 @@ export function PresenterResultsScreen({ game, players, submissions }: Props) {
           </div>
 
           <div className={`t7-champ${step >= 4 ? ' t7-on' : ''}`}>
-            <div className="t7-champ-head">ข้อความที่ทำให้{kengName}กล้าเริ่ม</div>
+            <div className="t7-champ-head">ข้อความที่ทำให้{kengName}เปิดใจลอง</div>
             <div className="t7-champ-chat">
               <div className="t7-champ-mine">{champ?.pitch ?? '—'}</div>
               <div className="t7-champ-kengrow">
-                <div className="t7-ava">ก</div>
+                <div className="t7-ava">ม</div>
                 <div className="t7-champ-keng">
-                  {champ?.reply ?? 'พี่อ่านแล้วนะ ขอเก็บไปคิดก่อน 🙏'}
+                  {champ?.reply ?? 'เดี๋ยวพี่ขอดูหน้างานก่อนนะครับหัวหน้า 🙏'}
                 </div>
               </div>
             </div>

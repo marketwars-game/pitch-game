@@ -2,12 +2,13 @@
 // FILE: src/components/admin/AdminTopBar.tsx
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T7-v1
+// VERSION: T8-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-05-06
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: Top header bar — brand + event + round + phase status + logout
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): แบรนด์ DIME × SCG
 //   T7-v1 (2026-08-04): เปลี่ยนแบรนด์เป็น DIME × KTC · INVESTMENT MADE SIMPLE
 //   T2-v1 (2026-05-06): Initial
 // =====================================================
@@ -69,7 +70,7 @@ export function AdminTopBar({ phase, roundNumber, onLogout }: AdminTopBarProps) 
               lineHeight: 1,
             }}
           >
-            DIME × KTC
+            DIME × SCG
           </div>
           <div
             style={{
@@ -80,7 +81,7 @@ export function AdminTopBar({ phase, roundNumber, onLogout }: AdminTopBarProps) 
               lineHeight: 1,
             }}
           >
-            INVESTMENT MADE SIMPLE
+            DRIVING EXECUTION & CHANGE MANAGEMENT
           </div>
         </div>
         <div

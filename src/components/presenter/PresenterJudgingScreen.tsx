@@ -1,16 +1,17 @@
 // =====================================================
 // FILE: src/components/presenter/PresenterJudgingScreen.tsx
 // PROJECT: pitch-game
-// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
+// VERSION: T8-v1
 // CREATED: 2026-05-07
-// LAST MODIFIED: 2026-08-04
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: จอระหว่างรอ AI ตัดสิน (~1-2 นาที)
 //          - พื้นหลังเป็นข้อความจริงของผู้เล่นลอยขึ้น (ไม่มีชื่อ) ให้ MC เล่นต่อได้
-//          - พี่เก่งอยู่กลาง เน้นสีทอง เพราะองก์ 1 ที่ตามมาคือข้อความจากแก
+//          - พี่มั่นอยู่กลาง เน้นสีทอง เพราะองก์ 1 ที่ตามมาคือข้อความจากแก
 //          - ความคืบหน้าแยกรายกรรมการ (ของจริงยิงขนาน เสร็จไม่พร้อมกัน)
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): strings เคสพี่มั่น (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เขียนใหม่ — ชื่อกรรมการใหม่, stream พื้นหลัง,
 //                       รับ submissions เพื่อแสดงความคืบหน้าจริง (เดิมไม่มี props)
 //   T4-v1 (2026-05-07): Initial
@@ -98,7 +99,7 @@ export function PresenterJudgingScreen({ submissions }: Props) {
 
         <div className="t7-j-headline">
           <div className="t7-j-big">
-            <em>พี่เก่ง</em>กำลังอ่านข้อความของทุกคน
+            <em>พี่มั่น</em>กำลังอ่านข้อความของทุกคน
           </div>
           <div className="t7-j-small">
             กรรมการอีก 2 ท่านก็กำลังให้คะแนนอยู่เหมือนกัน

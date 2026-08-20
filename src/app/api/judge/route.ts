@@ -1,10 +1,10 @@
 // =====================================================
 // FILE: src/app/api/judge/route.ts
 // PROJECT: pitch-game
-// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v3
+// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
+// VERSION: T8-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-04
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: POST /api/judge — รับ submissionId → ยิง 3 personas parallel → UPDATE scores
 //   - Streaming model: ถูกเรียกทันทีหลัง player submit (fire-and-forget)
 //   - Idempotent: ถ้า submission.judging_status='done' แล้ว → skip
@@ -15,6 +15,7 @@
 // Response: { ok: true, status: 'done' | 'failed', personas_succeeded: number }
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): fallback comments/reply เวอร์ชันพี่มั่น (ไม่แตะ logic)
 //   T7-v3 (2026-08-04): ส่ง allowReply ให้ callJudge — เปิดช่อง reply เฉพาะพี่เก่ง
 //                       (แก้อาการกรรมการอีก 2 คน fail 100% ดู anthropic.ts T7-v4)
 //   T7-v2 (2026-08-04): กรรมการคนที่ 2 = "พี่เก่ง" (คอมเมนต์ + fallback text)
@@ -72,15 +73,15 @@ function getServerSupabase() {
 // Fallback comments (เมื่อ persona ตัวนึงพังหมด)
 // =====================================================
 const FALLBACK_COMMENTS: Record<PersonaKey, string> = {
-  analyst: 'อาจารย์ติดสอนคลาสถัดไป — รอบนี้กรรมการอีก 2 ท่านตัดสินแทน',
-  creative: 'พี่เก่งกำลังยุ่งอยู่ ยังไม่ได้เปิดอ่าน — รอบนี้ฟัง 2 ท่านแทน',
+  analyst: 'วิทยากรติดคิวบรรยายอยู่ — รอบนี้กรรมการอีก 2 ท่านตัดสินแทน',
+  creative: 'พี่มั่นกำลังยุ่งอยู่ ยังไม่ได้เปิดอ่าน — รอบนี้ฟัง 2 ท่านแทน',
   communicator: 'กรรมการท่านนี้ติดสายอยู่ — อีก 2 ท่านลงคะแนนแทน',
 };
 
-// T7 — ใช้เมื่อพี่เก่งตัดสินสำเร็จแต่ไม่ได้ส่ง reply มา (field optional)
+// T8 — ใช้เมื่อพี่มั่นตัดสินสำเร็จแต่ไม่ได้ส่ง reply มา (field optional)
 // องก์ 1 ของการเฉลยต้องมีข้อความเสมอ ห้ามปล่อยจอว่าง
 const FALLBACK_REPLY =
-  'พี่อ่านแล้วนะ ขอเก็บไปคิดก่อน เดี๋ยวพี่มาคุยต่อ 🙏';
+  'เดี๋ยวพี่ขอดูหน้างานก่อนนะครับหัวหน้า 🙏';
 
 // =====================================================
 // T7 — แปลงสเกลคะแนน 0-100 (จาก AI) → 0.0-10.0 (เก็บลง DB)
@@ -102,7 +103,7 @@ async function runPersona(
     return await callJudge({
       systemPrompt: SYSTEM_PROMPTS[persona],
       userMessage,
-      // T7-v4: เปิดช่อง reply เฉพาะพี่เก่ง — กรรมการอีก 2 คนจะไม่เห็นช่องนี้เลย
+      // T7-v4: เปิดช่อง reply เฉพาะ creative (พี่มั่น) — กรรมการอีก 2 คนจะไม่เห็นช่องนี้เลย
       allowReply: persona === 'creative',
     });
   } catch (err) {
@@ -246,7 +247,7 @@ export async function POST(request: Request) {
     if (r !== null) {
       // T7: แปลง 0-100 → 0.0-10.0 ตรงนี้
       scores[key] = { score: toScore10(r.score), comment: r.comment };
-      // T7: เฉพาะ creative (พี่เก่ง) — ข้อความตอบกลับ (องก์ 1 ของการเฉลย)
+      // T8: เฉพาะ creative (พี่มั่น) — ข้อความตอบกลับ (องก์ 1 ของการเฉลย)
       if (key === 'creative') {
         scores[key] = {
           ...scores[key],

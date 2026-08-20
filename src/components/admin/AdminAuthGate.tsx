@@ -2,13 +2,14 @@
 // FILE: src/components/admin/AdminAuthGate.tsx
 // PROJECT: pitch-game
 // TASK: T2 — Admin Panel + Phase Control
-// VERSION: T7-v1
+// VERSION: T8-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-05-06
+// LAST MODIFIED: 2026-08-20
 // PURPOSE: Password screen — first thing admin sees
 //          Mesh bg + auth card with password input + submit button
 //
 // CHANGE LOG:
+//   T8-v1 (2026-08-20): แบรนด์ DIME × SCG
 //   T7-v1 (2026-08-04): เปลี่ยนแบรนด์เป็น DIME × KTC
 //   T2-v1 (2026-05-06): Initial — apply T1 mockup design language
 // =====================================================
@@ -107,7 +108,7 @@ export function AdminAuthGate({ loggingIn, error, onLogin }: AdminAuthGateProps)
             textTransform: 'uppercase',
           }}
         >
-          DIME × KTC · INVESTMENT MADE SIMPLE
+          DIME × SCG · DRIVING EXECUTION & CHANGE MANAGEMENT
         </div>
         <div
           style={{
