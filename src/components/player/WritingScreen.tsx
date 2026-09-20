@@ -1,10 +1,10 @@
 // =====================================================
 // FILE: src/components/player/WritingScreen.tsx
 // PROJECT: pitch-game
-// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
-// VERSION: T8-v1
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-20
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: หน้าเขียน — หน้าจอแชทแบบ LINE
 //          - บับเบิลพี่มั่นเปิดเรื่อง + กล่องโจทย์ + บับเบิลเขียวของผู้เล่นแบบ live
 //          - แถบเครื่องมือ 7 ชิ้น หดเองตอนคีย์บอร์ดเด้ง (Q1 = ก)
@@ -16,6 +16,7 @@
 //          - submitting / submitError states
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): ข้อความเวอร์ชันพี่ชัวร์ + ป้ายวัน "ระหว่าง session"
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เขียนใหม่เป็น LINE layout (เดิม: challenge box + StockCard)
 //                       - ใช้ชิ้นส่วนจาก KengChat.tsx + ToolTray.tsx
@@ -126,13 +127,13 @@ export function WritingScreen({
       <KengChatStyles />
 
       <ChatHeader
-        name={caseData?.name ?? 'พี่มั่น'}
+        name={caseData?.name ?? 'พี่ชัวร์'}
         status="ออนไลน์อยู่"
         right={<ChatTimer mmss={countdown.mmss} urgent={countdown.isUrgent} />}
       />
 
       <ChatSurface scrollRef={chatRef}>
-        <ChatDay label="วันนี้ · วงข้าวเที่ยง" />
+        <ChatDay label="วันนี้ · ระหว่าง session" />
 
         <KengIntro caseData={caseData} />
 
@@ -206,7 +207,7 @@ export function WritingScreen({
             onBlur={() => setTyping(false)}
             disabled={submitting || isSubmitted}
             placeholder={
-              isSubmitted ? 'ส่งไปแล้ว — แก้ไขไม่ได้' : 'พิมพ์ข้อความถึงพี่มั่น…'
+              isSubmitted ? 'ส่งไปแล้ว — แก้ไขไม่ได้' : 'พิมพ์ข้อความถึงพี่ชัวร์…'
             }
             rows={1}
             style={{
@@ -291,9 +292,9 @@ function SentNote({ autoSubmitted }: { autoSubmitted: boolean }) {
       }}
     >
       <b style={{ color: '#046B3A', display: 'block', marginBottom: 2 }}>
-        {autoSubmitted ? '⏱ หมดเวลา — ระบบส่งให้อัตโนมัติ' : '✓ ส่งข้อความให้พี่มั่นแล้ว'}
+        {autoSubmitted ? '⏱ หมดเวลา — ระบบส่งให้อัตโนมัติ' : '✓ ส่งข้อความให้พี่ชัวร์แล้ว'}
       </b>
-      รอเพื่อนๆ ส่งให้ครบก่อนนะ แล้วเรามาดูกันว่าพี่มั่นจะตอบว่าอะไร
+      รอเพื่อนๆ ส่งให้ครบก่อนนะ แล้วเรามาดูกันว่าพี่ชัวร์จะตอบว่าอะไร
     </div>
   );
 }

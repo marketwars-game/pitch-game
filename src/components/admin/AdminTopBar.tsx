@@ -1,13 +1,14 @@
 // =====================================================
 // FILE: src/components/admin/AdminTopBar.tsx
 // PROJECT: pitch-game
-// TASK: T2 — Admin Panel + Phase Control
-// VERSION: T8-v1
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-20
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: Top header bar — brand + event + round + phase status + logout
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): brand line เวอร์ชัน AXA
 //   T8-v1 (2026-08-20): แบรนด์ DIME × SCG
 //   T7-v1 (2026-08-04): เปลี่ยนแบรนด์เป็น DIME × KTC · INVESTMENT MADE SIMPLE
 //   T2-v1 (2026-05-06): Initial
@@ -70,7 +71,7 @@ export function AdminTopBar({ phase, roundNumber, onLogout }: AdminTopBarProps) 
               lineHeight: 1,
             }}
           >
-            DIME × SCG
+            DIME × AXA
           </div>
           <div
             style={{
@@ -81,7 +82,7 @@ export function AdminTopBar({ phase, roundNumber, onLogout }: AdminTopBarProps) 
               lineHeight: 1,
             }}
           >
-            DRIVING EXECUTION & CHANGE MANAGEMENT
+            DATA & AI WEEK 2026
           </div>
         </div>
         <div

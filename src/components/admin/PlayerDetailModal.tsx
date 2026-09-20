@@ -1,10 +1,10 @@
 // =====================================================
 // FILE: src/components/admin/PlayerDetailModal.tsx
 // PROJECT: pitch-game
-// TASK: T3 — AI Judge API
-// VERSION: T8-v1
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-20
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: Modal — show full pitch + 3 judge scores + comments
 //          Used on stage during Top 3 reveal
 //          Auto-defaulted banner shown when admin should know AI failed
@@ -15,6 +15,7 @@
 //                 - state: idle | running | success | error
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): ชื่อ/role/ไอคอนกรรมการ → The Analyst (นักวิเคราะห์หุ้น) / พี่ชัวร์
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): ชื่อกรรมการใหม่ + แสดงข้อความที่พี่เก่งตอบกลับ (scores.creative.reply)
 //                       + คะแนนกรรมการ 1 ทศนิยม / finalScore 2 ทศนิยม
@@ -408,9 +409,9 @@ export function PlayerDetailModal({
               <SectionTitle>Judges</SectionTitle>
               <JudgeCard
                 persona="analyst"
-                icon="🎓"
-                name="The Professor"
-                role="อาจารย์การเงิน"
+                icon="📊"
+                name="The Analyst"
+                role="นักวิเคราะห์หุ้น"
                 color="#8B5CF6"
                 colorSoft="rgba(139,92,246,0.15)"
                 score={scores.analyst}
@@ -418,7 +419,7 @@ export function PlayerDetailModal({
               <JudgeCard
                 persona="creative"
                 icon="🧡"
-                name="พี่มั่น"
+                name="พี่ชัวร์"
                 role="คนที่ได้รับข้อความ"
                 color="#FF8C42"
                 colorSoft="rgba(255,140,66,0.15)"
@@ -583,7 +584,7 @@ function JudgeCard({
         {score.comment}
       </div>
 
-      {/* T8: ข้อความที่พี่มั่นพิมพ์ตอบกลับ (มีเฉพาะ persona creative) */}
+      {/* T9: ข้อความที่พี่ชัวร์พิมพ์ตอบกลับ (มีเฉพาะ persona creative) */}
       {score.reply && (
         <div
           style={{

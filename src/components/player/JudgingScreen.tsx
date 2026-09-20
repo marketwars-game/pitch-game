@@ -1,10 +1,10 @@
 // =====================================================
 // FILE: src/components/player/JudgingScreen.tsx
 // PROJECT: pitch-game
-// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
-// VERSION: T8-v1
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-20
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: หน้ารอตัดสิน — อยู่ในหน้าแชทเดิม ไม่ตัดไปหน้าอนิเมชันอื่น
 //          ใช้ "กำลังพิมพ์…" แบบ LINE ซึ่งจะกลายเป็นข้อความจริงของพี่เก่ง
 //          ในหน้าถัดไป (องก์ 1 ของการเฉลย) — ต่อเนื่องเป็นเรื่องเดียว
@@ -13,6 +13,7 @@
 //          variant='not-playing'  → ไม่ได้ส่ง (คงพฤติกรรมเดิม)
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): ข้อความรอผลเวอร์ชันพี่ชัวร์
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เขียนใหม่เป็นหน้าแชท (เดิม: neural network SVG)
 //                       + รับ pitch/caseName เพื่อโชว์ข้อความของผู้เล่นค้างไว้
@@ -35,7 +36,7 @@ interface JudgingScreenProps {
 }
 
 export function JudgingScreen({ variant, pitch, caseName }: JudgingScreenProps) {
-  const name = caseName ?? 'พี่มั่น';
+  const name = caseName ?? 'พี่ชัวร์';
 
   // ---------- ไม่ได้แข่งรอบนี้ (คงเดิม) ----------
   if (variant === 'not-playing') {
@@ -130,7 +131,7 @@ export function JudgingScreen({ variant, pitch, caseName }: JudgingScreenProps) 
               lineHeight: 1.65,
             }}
           >
-            วิทยากรกับเพื่อนที่อ่านแชท
+            นักวิเคราะห์หุ้นกับเพื่อนที่อ่านแชท
             <br />
             ก็กำลังให้คะแนนอยู่เหมือนกัน
           </div>

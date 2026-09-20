@@ -2,7 +2,7 @@
 // FILE: scripts/t9-bench.ts
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v2
+// VERSION: T9-v3
 // CREATED: 2026-09-20
 // PURPOSE: ชุดทดสอบ A/B/C/D/E ของกรรมการ — ยิงผ่าน callJudge + SYSTEM_PROMPTS ตัวจริง
 //          (model / temperature / tool schema / retry เดียวกับ production ทุกอย่าง)
@@ -14,6 +14,7 @@
 // (เลขท้าย = จำนวนรอบต่อข้อความ ค่าเริ่มต้น 2)
 //
 // CHANGE LOG:
+//   T9-v3 (2026-09-20): เพิ่มเกณฑ์ 16–17 ตรวจ reply ซ้ำ (ประโยคเดียวกัน / ขึ้นต้น "อ๋อ" / ปิดด้วยประโยคสำเร็จรูป)
 //   T9-v2 (2026-09-20): เกณฑ์ที่ไม่มีข้อมูลขึ้น N/A แทน PASS · เพิ่มเกณฑ์ 13–15 (ตรวจหักข้ามเลน + ความยาวคอมเมนต์)
 //   T9-v1 (2026-09-20): สร้างครั้งแรก — 6 ข้อความ (A B C1 C2 D E) + เกณฑ์ผ่านอัตโนมัติ
 // =====================================================
@@ -192,6 +193,12 @@ async function main(): Promise<void> {
   const longOrLeak = allComments.filter(
     (c) => c.length > 260 || /กฎเหล็ก|โทษหนัก|เพดาน|พื้นคะแนน|ไม่เกิน \d\d|reference|ข้อมูลอ้างอิง/.test(c)
   );
+  const norm = (x: string) => x.replace(/[\s\p{Emoji_Presentation}….,!?]/gu, '');
+  const head = (x: string) => norm(x).slice(0, 18);
+  const dupHeads = replies.length - new Set(replies.map(head)).size;
+  const stock = replies.filter(
+    (x) => /^อ๋อ/.test(x.trim()) || /ขอไปอ่านเรื่องนี้เพิ่มก่อนนะ|ขอบใจที่บอกตรงๆ/.test(x)
+  );
   const noData = rows.every((r) => PERSONA_KEYS.every((k) => r.cells[k] === null));
 
   const checks: [string, boolean, string][] = [
@@ -208,6 +215,8 @@ async function main(): Promise<void> {
     ['13. E: communicator ≥ 70 ทุกรอบ (ไม่หักข้ามเลนเรื่องข้อมูล)', pOf('E', 'communicator').every((s) => s >= 70), pOf('E', 'communicator').join('/')],
     ['14. E < A (ข้อมูลเก่าไม่ชนะมือใหม่ที่ข้อมูลถูก)', avgOf('E') < avgOf('A'), `E=${avgOf('E').toFixed(2)} A=${avgOf('A').toFixed(2)}`],
     ['15. คอมเมนต์ยาวเกิน 260 ตัวอักษร ≤ 10% และไม่มีคำหลุดกลไก', longOrLeak.length <= Math.ceil(allComments.length * 0.1), `${longOrLeak.length}/${allComments.length}`],
+    ['16. reply ขึ้นต้นซ้ำกัน (18 ตัวอักษรแรก) ≤ 1 คู่', dupHeads <= 1, `${dupHeads}`],
+    ['17. reply สำเร็จรูป (ขึ้นต้น "อ๋อ" หรือปิดด้วยประโยคจากตัวอย่างเดิม) ≤ 25%', stock.length <= Math.ceil(replies.length * 0.25), `${stock.length}/${replies.length}`],
     ['11. reply ไม่หลุดบทบาท (ไม่มี พี่ชัวร์/ผม/ครับ/ค่ะ)', roleLeak.length === 0, `${roleLeak.length}/${replies.length}`],
     ['12. ไม่มี persona fail', fails.length === 0, `${fails.length}`],
   ];

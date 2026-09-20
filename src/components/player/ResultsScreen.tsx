@@ -1,16 +1,17 @@
 // =====================================================
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
-// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
-// VERSION: T8-v2
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-20
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
 //   State 8: full results (vibrant + watermark + sparkles + 3 judge cards + rank)
 //   State 9: not playing (faded "การแข่งขันสิ้นสุด")
 //   คำนวณ rank โดย POLL submissions ทุก 5 วินาที (T5-v4: เปลี่ยนจาก realtime)
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): brand + ชื่อกรรมการ + fallback reply (ตรงกับ FALLBACK_REPLY ใน route.ts T9-v1)
 //   T8-v2 (2026-08-21): fallback reply องก์ 1 → ตรงกับ FALLBACK_REPLY ใหม่ใน route.ts
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น + แบรนด์ DIME × SCG (ไม่แตะ logic)
 //   T7-v2 (2026-08-04): คะแนนรวมของผู้เล่นแสดง 2 ทศนิยม (เดิม 1)
@@ -161,9 +162,9 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
             WebkitBackdropFilter: 'blur(6px)',
           }}
         >
-          <span style={{ color: '#5DF591' }}>DIME × SCG</span>
+          <span style={{ color: '#5DF591' }}>DIME × AXA</span>
           <span style={{ color: '#71717A', fontWeight: 400 }}>·</span>
-          <span style={{ color: '#3B7DFF' }}>DRIVING EXECUTION & CHANGE MANAGEMENT</span>
+          <span style={{ color: '#3B7DFF' }}>DATA & AI WEEK 2026</span>
         </span>
       </div>
 
@@ -171,7 +172,7 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
       <div style={{ padding: '4px 16px 16px', overflowY: 'auto', height: 'calc(100% - 36px)' }}>
         <KengChatStyles />
 
-        {/* องก์ 1 — พี่มั่นตอบกลับแล้ว (อยู่เหนือคะแนนเสมอ) */}
+        {/* องก์ 1 — พี่ชัวร์ตอบกลับแล้ว (อยู่เหนือคะแนนเสมอ) */}
         <div style={{ position: 'relative', zIndex: 2, marginBottom: 14 }}>
           <div
             style={{
@@ -183,7 +184,7 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
               margin: '2px 0 7px',
             }}
           >
-            องก์ 1 · พี่มั่นตอบกลับแล้ว
+            องก์ 1 · พี่ชัวร์ตอบกลับแล้ว
           </div>
           <ChatSurface
             style={{
@@ -198,7 +199,7 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
               <MyBubble compact>{submission.pitch}</MyBubble>
             )}
             <KengBubble>
-              {kengReply ?? 'เดี๋ยวพี่ขอดูหน้างานก่อนนะครับหัวหน้า 🙏'}
+              {kengReply ?? 'ขอบใจนะน้อง เดี๋ยวพี่ขอค่อยๆ อ่านอีกรอบก่อนนะ 🙏'}
             </KengBubble>
           </ChatSurface>
         </div>
@@ -301,15 +302,15 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
         {/* Judge cards 3 ใบ */}
         <JudgeCard
           variant="analyst"
-          icon="🎓"
-          name="The Professor"
-          role="อาจารย์การเงิน"
+          icon="📊"
+          name="The Analyst"
+          role="นักวิเคราะห์หุ้น"
           score={scores?.analyst}
         />
         <JudgeCard
           variant="creative"
           icon="🧡"
-          name="พี่มั่น"
+          name="พี่ชัวร์"
           role="คนที่ได้รับข้อความ"
           score={scores?.creative}
         />

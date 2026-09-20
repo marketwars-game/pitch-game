@@ -1,15 +1,16 @@
 // =====================================================
 // FILE: src/components/presenter/PresenterChrome.tsx
 // PROJECT: pitch-game
-// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
-// VERSION: T8-v1
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-08-04
-// LAST MODIFIED: 2026-08-20
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: ชิ้นส่วนที่ทุกจอใช้ร่วมกัน — พื้นหลัง ambient + แถบแบรนด์มุมบน
 //          แทน PresenterHeader เดิม (ซึ่งใช้โลโก้ dime-d.png + ชื่อเกมเก่า)
 //          T8 ใช้ตัวอักษรล้วน ไม่ใช้โลโก้ เพราะไม่มีไฟล์โลโก้ SCG ที่อนุมัติแล้ว
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): comment เท่านั้น — brand มาจาก presenter-config
 //   T8-v1 (2026-08-20): อัปเดตคอมเมนต์แบรนด์ — ข้อความจริงดึงจาก presenter-config (BRAND_*)
 //   T7-v1 (2026-08-04): Initial
 // =====================================================
@@ -32,7 +33,7 @@ export function T7Ambient({ thirdOrb = false }: { thirdOrb?: boolean }) {
 
 export type T7StatusVariant = 'default' | 'warn' | 'danger';
 
-/** แถบบน: DIME × SCG ซ้าย + สถานะขวา */
+/** แถบบน: DIME × AXA ซ้าย + สถานะขวา */
 export function T7TopBar({
   status,
   variant = 'default',

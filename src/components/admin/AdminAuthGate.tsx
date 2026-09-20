@@ -1,14 +1,15 @@
 // =====================================================
 // FILE: src/components/admin/AdminAuthGate.tsx
 // PROJECT: pitch-game
-// TASK: T2 — Admin Panel + Phase Control
-// VERSION: T8-v1
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-20
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: Password screen — first thing admin sees
 //          Mesh bg + auth card with password input + submit button
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): brand line เวอร์ชัน AXA
 //   T8-v1 (2026-08-20): แบรนด์ DIME × SCG
 //   T7-v1 (2026-08-04): เปลี่ยนแบรนด์เป็น DIME × KTC
 //   T2-v1 (2026-05-06): Initial — apply T1 mockup design language
@@ -108,7 +109,7 @@ export function AdminAuthGate({ loggingIn, error, onLogin }: AdminAuthGateProps)
             textTransform: 'uppercase',
           }}
         >
-          DIME × SCG · DRIVING EXECUTION & CHANGE MANAGEMENT
+          DIME × AXA · DATA & AI WEEK 2026
         </div>
         <div
           style={{

@@ -1,10 +1,10 @@
 // =====================================================
 // FILE: src/components/player/KengChat.tsx
 // PROJECT: pitch-game
-// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
-// VERSION: T8-v2
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-08-04
-// LAST MODIFIED: 2026-08-20
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: ชิ้นส่วนหน้าจอแชทแบบ LINE — ใช้ร่วมกัน 3 หน้าจอ
 //          WritingScreen (เขียน) · JudgingScreen (รอพี่มั่นอ่าน) · ResultsScreen (องก์ 1)
 //          เลียนแบบเลย์เอาต์อย่างเดียว ไม่ใช้โลโก้/เครื่องหมายการค้าของ LINE
@@ -13,6 +13,7 @@
 //          ทุก block ที่ width:100% + padding ต้องใส่ boxSizing: 'border-box' เอง
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): หัวกล่องโจทย์ + avatar ช
 //   T8-v2 (2026-08-21): อวาตาร์ KengBubble ก → ม (ใช้ร่วมทุกจอมือถือ)
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น + โจทย์ใหม่ (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): Initial
@@ -204,7 +205,7 @@ export function KengBubble({
           visibility: showAvatar ? 'visible' : 'hidden',
         }}
       >
-        ม
+        ช
       </div>
       <div
         style={{
@@ -318,7 +319,7 @@ export function TaskNote({ rules }: { rules: string[] }) {
       }}
     >
       <div style={{ color: '#B25510', fontWeight: 800, marginBottom: 3 }}>
-        โจทย์ — พิมพ์ตอบพี่มั่น 1 ข้อความ ให้แกเปิดใจลองก้าวแรก (ห้ามสั่ง ห้ามขู่ ห้ามอ้างนโยบาย)
+        โจทย์ — พิมพ์ตอบพี่ชัวร์ 1 ข้อความ อธิบายหุ้น SpaceX ให้แกเข้าใจ (อธิบาย ไม่ใช่ชวนซื้อ)
       </div>
       {rules.map((r, i) => (
         <div key={i} style={{ display: 'flex', gap: 5 }}>

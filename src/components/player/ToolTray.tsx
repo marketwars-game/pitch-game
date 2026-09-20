@@ -1,10 +1,10 @@
 // =====================================================
 // FILE: src/components/player/ToolTray.tsx
 // PROJECT: pitch-game
-// TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-08-04
-// LAST MODIFIED: 2026-08-04
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: กล่องเครื่องมือ 7 ชิ้น — แถบชิปเลื่อนแนวนอนเหนือช่องพิมพ์
 //          ตำแหน่งเดียวกับแถบคำแนะนำของคีย์บอร์ด ไม่กินพื้นที่แชท
 //
@@ -17,6 +17,7 @@
 //   เพราะต้องเดาจากคำ ถ้าติ๊กผิดผู้เล่นจะเชื่อว่าใช้ครบทั้งที่ยังไม่ได้ใช้
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): WHY 3 ชิป ขยายเต็มแถว (flex:1) แทนแถบเลื่อน 7 ชิป + ข้อความเวอร์ชัน T9
 //   T7-v1 (2026-08-04): Initial
 // =====================================================
 'use client';
@@ -44,7 +45,7 @@ export function ToolButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label="กล่องเครื่องมือ"
+      aria-label="WHY framework"
       style={{
         width: 36,
         height: 36,
@@ -101,7 +102,7 @@ export function ToolChips() {
           padding: '0 2px 5px',
         }}
       >
-        🧰 กล่องเครื่องมือจากคลาสวันนี้ · แตะเพื่อดูนิยาม
+        🧰 WHY จาก session วันนี้ · แตะเพื่อดูนิยาม
       </div>
 
       <div
@@ -122,9 +123,10 @@ export function ToolChips() {
               type="button"
               onClick={() => setOpenId(on ? null : t.id)}
               style={{
-                flexShrink: 0,
+                flex: 1,
+                minWidth: 0,
                 fontSize: 11.5,
-                padding: '6px 11px',
+                padding: '6px 8px',
                 borderRadius: 999,
                 background: on ? '#E7F9EE' : '#fff',
                 color: on ? '#046B3A' : '#3d434b',
@@ -160,7 +162,7 @@ export function ToolChips() {
             <b style={{ color: '#046B3A' }}>{open.name}</b> — {open.short}
           </>
         ) : (
-          'ใช้อย่างน้อย 1 ชิ้น — กรรมการดูว่าใช้ถูกบริบทไหม ไม่ใช่แค่แปะชื่อ'
+          'ตอบให้ครบทั้ง 3 ตัว — กรรมการดูว่าครบและข้อมูลถูกไหม'
         )}
       </div>
     </div>

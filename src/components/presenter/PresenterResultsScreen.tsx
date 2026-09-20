@@ -1,10 +1,10 @@
 // =====================================================
 // FILE: src/components/presenter/PresenterResultsScreen.tsx
 // PROJECT: pitch-game
-// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
-// VERSION: T8-v1
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-05-07
-// LAST MODIFIED: 2026-08-20
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: จอผลรอบสุดท้าย — รับใช้องก์ 2-3 ของการเฉลย
 //          - เปิดทีละขั้นด้วย SPACE/คลิก ให้ MC คุมจังหวะพากลุ้นเอง
 //            (state ฝั่ง client ล้วน ไม่แตะ DB / ไม่แตะ phase)
@@ -13,6 +13,7 @@
 //          - อันดับ 4-10
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): ข้อความ podium เวอร์ชันพี่ชัวร์ + avatar ช + fallback reply
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น — headline ผล + อวาตาร์ ม + fallback reply ใหม่ (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เขียนใหม่ — staged reveal, ranking.ts, 2 ทศนิยม,
 //                       ข้อความแชมป์, ใช้ PresenterChrome แทน PresenterHeader
@@ -77,7 +78,7 @@ export function PresenterResultsScreen({ game, players, submissions }: Props) {
   const podium = ranked.slice(0, PODIUM_TOP_N);
   const runners = ranked.slice(PODIUM_TOP_N, PODIUM_TOP_N + RUNNERS_TOP_N);
   const champ = podium[0] ?? null;
-  const kengName = game.stock?.name ?? 'พี่มั่น';
+  const kengName = game.stock?.name ?? 'พี่ชัวร์';
 
   // ---------- การเปิดผลทีละขั้น ----------
   // 0 = ยังไม่เปิดอะไร · 1 = อันดับ 3 · 2 = อันดับ 2 · 3 = แชมป์
@@ -109,14 +110,14 @@ export function PresenterResultsScreen({ game, players, submissions }: Props) {
 
   const headline =
     step === 0
-      ? `ใครทำให้${kengName}เปิดใจลองได้มากที่สุด`
+      ? `ใครอธิบายให้${kengName}เข้าใจได้ดีที่สุด`
       : step === 1
         ? 'อันดับ 3 …'
         : step === 2
           ? 'อันดับ 2 …'
           : step === 3
             ? 'แชมป์ของรอบนี้'
-            : `ใครทำให้${kengName}เปิดใจลองได้มากที่สุด`;
+            : `ใครอธิบายให้${kengName}เข้าใจได้ดีที่สุด`;
 
   const cue =
     step === 0
@@ -151,17 +152,17 @@ export function PresenterResultsScreen({ game, players, submissions }: Props) {
           </div>
 
           <div className={`t7-champ${step >= 4 ? ' t7-on' : ''}`}>
-            <div className="t7-champ-head">ข้อความที่ทำให้{kengName}เปิดใจลอง</div>
+            <div className="t7-champ-head">ข้อความที่ทำให้{kengName}เข้าใจ</div>
             <div className="t7-champ-chat">
               <div className="t7-champ-mine">{champ?.pitch ?? '—'}</div>
               <div className="t7-champ-kengrow">
-                <div className="t7-ava">ม</div>
+                <div className="t7-ava">ช</div>
                 <div className="t7-champ-keng">
-                  {champ?.reply ?? 'เดี๋ยวพี่ขอดูหน้างานก่อนนะครับหัวหน้า 🙏'}
+                  {champ?.reply ?? 'ขอบใจนะน้อง เดี๋ยวพี่ขอค่อยๆ อ่านอีกรอบก่อนนะ 🙏'}
                 </div>
               </div>
             </div>
-            <div className="t7-champ-foot">ฟัง → หลักการ → ก้าวเล็กที่ทำได้วันนี้</div>
+            <div className="t7-champ-foot">What → How → Yet · AI เก่งเท่า context ที่เราป้อน</div>
           </div>
         </div>
 

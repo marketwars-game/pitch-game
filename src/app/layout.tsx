@@ -1,15 +1,18 @@
 // FILE: src/app/layout.tsx — Root Layout
-// VERSION: T0-v1 — Initial layout for T0 setup
-// LAST MODIFIED: 2026-08-20
-// HISTORY:
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
+// LAST MODIFIED: 2026-09-20
+// CHANGE LOG:
+//   T9-v1 (2026-09-20): metadata title/description เวอร์ชัน AXA Data & AI Week 2026
+//   T8 (2026-08-20): metadata เวอร์ชัน SCG
 //   T0-v1: Initial — minimal root layout
 
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'LINE หาพี่มั่น — DIME × SCG',
-  description: 'Driving Execution & Change Management · SCG — เกมโดย KKP Dime',
+  title: 'LINE หาพี่ชัวร์ — DIME × AXA',
+  description: 'AXA Data & AI Week 2026 — เกมโดย KKP Dime',
 };
 
 export const viewport: Viewport = {
