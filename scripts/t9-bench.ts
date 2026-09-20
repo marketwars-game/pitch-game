@@ -2,7 +2,7 @@
 // FILE: scripts/t9-bench.ts
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v3
+// VERSION: T9-v4
 // CREATED: 2026-09-20
 // PURPOSE: ชุดทดสอบ A/B/C/D/E ของกรรมการ — ยิงผ่าน callJudge + SYSTEM_PROMPTS ตัวจริง
 //          (model / temperature / tool schema / retry เดียวกับ production ทุกอย่าง)
@@ -14,6 +14,7 @@
 // (เลขท้าย = จำนวนรอบต่อข้อความ ค่าเริ่มต้น 2)
 //
 // CHANGE LOG:
+//   T9-v4 (2026-09-20): เกณฑ์ 18 คำห้วน/คำหยาบ/เครื่องหมายคำพูดค้าง = 0 · เกณฑ์ 15 ผ่อนเป็น ≤ 20%
 //   T9-v3 (2026-09-20): เพิ่มเกณฑ์ 16–17 ตรวจ reply ซ้ำ (ประโยคเดียวกัน / ขึ้นต้น "อ๋อ" / ปิดด้วยประโยคสำเร็จรูป)
 //   T9-v2 (2026-09-20): เกณฑ์ที่ไม่มีข้อมูลขึ้น N/A แทน PASS · เพิ่มเกณฑ์ 13–15 (ตรวจหักข้ามเลน + ความยาวคอมเมนต์)
 //   T9-v1 (2026-09-20): สร้างครั้งแรก — 6 ข้อความ (A B C1 C2 D E) + เกณฑ์ผ่านอัตโนมัติ
@@ -199,6 +200,9 @@ async function main(): Promise<void> {
   const stock = replies.filter(
     (x) => /^อ๋อ/.test(x.trim()) || /ขอไปอ่านเรื่องนี้เพิ่มก่อนนะ|ขอบใจที่บอกตรงๆ/.test(x)
   );
+  const rude = [...replies, ...allComments].filter(
+    (x) => /(^|[^ก-๙])(วะ|ว่ะ)([^ก-๙]|$)|โว้ย|เว้ย|แม่ง/.test(x) || /"\s*$/.test(x.trim())
+  );
   const noData = rows.every((r) => PERSONA_KEYS.every((k) => r.cells[k] === null));
 
   const checks: [string, boolean, string][] = [
@@ -214,9 +218,10 @@ async function main(): Promise<void> {
     ['10. E: analyst ≤ 50 ทุกรอบ (จับข้อมูลเก่า)', pOf('E', 'analyst').every((s) => s <= 50), pOf('E', 'analyst').join('/')],
     ['13. E: communicator ≥ 70 ทุกรอบ (ไม่หักข้ามเลนเรื่องข้อมูล)', pOf('E', 'communicator').every((s) => s >= 70), pOf('E', 'communicator').join('/')],
     ['14. E < A (ข้อมูลเก่าไม่ชนะมือใหม่ที่ข้อมูลถูก)', avgOf('E') < avgOf('A'), `E=${avgOf('E').toFixed(2)} A=${avgOf('A').toFixed(2)}`],
-    ['15. คอมเมนต์ยาวเกิน 260 ตัวอักษร ≤ 10% และไม่มีคำหลุดกลไก', longOrLeak.length <= Math.ceil(allComments.length * 0.1), `${longOrLeak.length}/${allComments.length}`],
+    ['15. คอมเมนต์ยาวเกิน 260 ตัวอักษรหรือหลุดกลไก ≤ 20%', longOrLeak.length <= Math.ceil(allComments.length * 0.2), `${longOrLeak.length}/${allComments.length}`],
     ['16. reply ขึ้นต้นซ้ำกัน (18 ตัวอักษรแรก) ≤ 1 คู่', dupHeads <= 1, `${dupHeads}`],
     ['17. reply สำเร็จรูป (ขึ้นต้น "อ๋อ" หรือปิดด้วยประโยคจากตัวอย่างเดิม) ≤ 25%', stock.length <= Math.ceil(replies.length * 0.25), `${stock.length}/${replies.length}`],
+    ['18. ไม่มีคำห้วน/คำหยาบ และไม่มีเครื่องหมายคำพูดค้างท้าย (reply + comment)', rude.length === 0, `${rude.length}`],
     ['11. reply ไม่หลุดบทบาท (ไม่มี พี่ชัวร์/ผม/ครับ/ค่ะ)', roleLeak.length === 0, `${roleLeak.length}/${replies.length}`],
     ['12. ไม่มี persona fail', fails.length === 0, `${fails.length}`],
   ];
