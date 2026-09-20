@@ -1,10 +1,10 @@
 // =====================================================
 // FILE: src/app/api/judge/route.ts
 // PROJECT: pitch-game
-// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
-// VERSION: T8-v1
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-20
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: POST /api/judge — รับ submissionId → ยิง 3 personas parallel → UPDATE scores
 //   - Streaming model: ถูกเรียกทันทีหลัง player submit (fire-and-forget)
 //   - Idempotent: ถ้า submission.judging_status='done' แล้ว → skip
@@ -15,6 +15,7 @@
 // Response: { ok: true, status: 'done' | 'failed', personas_succeeded: number }
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): fallback comments/reply เวอร์ชันพี่ชัวร์ (ไม่แตะ logic)
 //   T8-v1 (2026-08-20): fallback comments/reply เวอร์ชันพี่มั่น (ไม่แตะ logic)
 //   T7-v3 (2026-08-04): ส่ง allowReply ให้ callJudge — เปิดช่อง reply เฉพาะพี่เก่ง
 //                       (แก้อาการกรรมการอีก 2 คน fail 100% ดู anthropic.ts T7-v4)
@@ -73,15 +74,15 @@ function getServerSupabase() {
 // Fallback comments (เมื่อ persona ตัวนึงพังหมด)
 // =====================================================
 const FALLBACK_COMMENTS: Record<PersonaKey, string> = {
-  analyst: 'วิทยากรติดคิวบรรยายอยู่ — รอบนี้กรรมการอีก 2 ท่านตัดสินแทน',
-  creative: 'พี่มั่นกำลังยุ่งอยู่ ยังไม่ได้เปิดอ่าน — รอบนี้ฟัง 2 ท่านแทน',
+  analyst: 'นักวิเคราะห์ติดประชุมเช้าอยู่ — รอบนี้กรรมการอีก 2 ท่านตัดสินแทน',
+  creative: 'พี่ชัวร์กำลังยุ่งอยู่ ยังไม่ได้เปิดอ่าน — รอบนี้ฟัง 2 ท่านแทน',
   communicator: 'กรรมการท่านนี้ติดสายอยู่ — อีก 2 ท่านลงคะแนนแทน',
 };
 
-// T8 — ใช้เมื่อพี่มั่นตัดสินสำเร็จแต่ไม่ได้ส่ง reply มา (field optional)
+// T9 — ใช้เมื่อพี่ชัวร์ตัดสินสำเร็จแต่ไม่ได้ส่ง reply มา (field optional)
 // องก์ 1 ของการเฉลยต้องมีข้อความเสมอ ห้ามปล่อยจอว่าง
 const FALLBACK_REPLY =
-  'เดี๋ยวพี่ขอดูหน้างานก่อนนะครับหัวหน้า 🙏';
+  'ขอบใจนะน้อง เดี๋ยวพี่ขอค่อยๆ อ่านอีกรอบก่อนนะ 🙏';
 
 // =====================================================
 // T7 — แปลงสเกลคะแนน 0-100 (จาก AI) → 0.0-10.0 (เก็บลง DB)
@@ -103,7 +104,7 @@ async function runPersona(
     return await callJudge({
       systemPrompt: SYSTEM_PROMPTS[persona],
       userMessage,
-      // T7-v4: เปิดช่อง reply เฉพาะ creative (พี่มั่น) — กรรมการอีก 2 คนจะไม่เห็นช่องนี้เลย
+      // T7-v4: เปิดช่อง reply เฉพาะ creative (พี่ชัวร์) — กรรมการอีก 2 คนจะไม่เห็นช่องนี้เลย
       allowReply: persona === 'creative',
     });
   } catch (err) {
@@ -247,7 +248,7 @@ export async function POST(request: Request) {
     if (r !== null) {
       // T7: แปลง 0-100 → 0.0-10.0 ตรงนี้
       scores[key] = { score: toScore10(r.score), comment: r.comment };
-      // T8: เฉพาะ creative (พี่มั่น) — ข้อความตอบกลับ (องก์ 1 ของการเฉลย)
+      // T9: เฉพาะ creative (พี่ชัวร์) — ข้อความตอบกลับ (องก์ 1 ของการเฉลย)
       if (key === 'creative') {
         scores[key] = {
           ...scores[key],

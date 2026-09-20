@@ -1,10 +1,10 @@
 // =====================================================
 // FILE: src/lib/anthropic.ts
 // PROJECT: pitch-game
-// TASK: T8 — LINE หาพี่มั่น (DIME x SCG)
-// VERSION: T8-v1
+// TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
+// VERSION: T9-v1
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-08-20
+// LAST MODIFIED: 2026-09-20
 // PURPOSE: Anthropic SDK client + retry helper + Tool Use forced JSON
 //   - Singleton client (reuse across requests)
 //   - Retry with exponential backoff + jitter for 429/529
@@ -12,6 +12,7 @@
 //   - ✨ T5-v2: Tool Use forced (tool_choice='tool') — guarantee JSON shape
 //
 // CHANGE LOG:
+//   T9-v1 (2026-09-20): tool description + comments เวอร์ชันพี่ชัวร์ (ไม่แตะ logic/retry/model/schema)
 //   T8-v1 (2026-08-20): tool description + comments เวอร์ชันพี่มั่น (ไม่แตะ logic/retry/model)
 //   T7-v4 (2026-08-04): 🔴 FIX — กรรมการ 2 ใน 3 fail ทุกครั้ง
 //                        อาการ: Haiku เอาคอมเมนต์ไปใส่ช่อง `reply` แล้วไม่ส่ง `comment`
@@ -103,11 +104,11 @@ const SUBMIT_JUDGMENT_TOOL: Anthropic.Tool = {
   },
 };
 
-/** ใช้กับ persona พี่มั่น (creative) เท่านั้น — มีช่อง reply เพิ่ม */
+/** ใช้กับ persona พี่ชัวร์ (creative) เท่านั้น — มีช่อง reply เพิ่ม */
 const SUBMIT_JUDGMENT_TOOL_WITH_REPLY: Anthropic.Tool = {
   name: 'submit_judgment',
   description:
-    'ส่งคะแนน คอมเมนต์ และข้อความที่พี่มั่นพิมพ์ตอบกลับ — ต้องเรียก tool นี้เท่านั้น',
+    'ส่งคะแนน คอมเมนต์ และข้อความที่พี่ชัวร์พิมพ์ตอบกลับ — ต้องเรียก tool นี้เท่านั้น',
   input_schema: {
     type: 'object',
     properties: {
@@ -120,7 +121,7 @@ const SUBMIT_JUDGMENT_TOOL_WITH_REPLY: Anthropic.Tool = {
       reply: {
         type: 'string' as const,
         description:
-          'ข้อความที่พี่มั่นพิมพ์ตอบกลับในไลน์ 1-2 ประโยค ภาษาพูดล้วน ' +
+          'ข้อความที่พี่ชัวร์พิมพ์ตอบกลับในไลน์ 1-2 ประโยค ภาษาพูดล้วน ' +
           'ห้ามพูดถึงคะแนนหรือการตัดสินในช่องนี้',
       },
     },
@@ -205,7 +206,7 @@ function calcDelayMs(attempt: number, retryAfter?: number): number {
 export type JudgeResponse = {
   score: number;      // T7: สเกล 0-100 (ยังไม่หาร 10 — /api/judge เป็นคนหาร)
   comment: string;
-  reply?: string;     // T8: ข้อความพี่มั่นตอบกลับ (เฉพาะ persona creative)
+  reply?: string;     // T9: ข้อความพี่ชัวร์ตอบกลับ (เฉพาะ persona creative)
 };
 
 // =====================================================
@@ -246,7 +247,7 @@ function sanitizeComment(value: unknown): string {
 export async function callJudge(params: {
   systemPrompt: string;
   userMessage: string;
-  /** true เฉพาะ persona พี่มั่น (creative) — เปิดช่อง reply ใน tool schema */
+  /** true เฉพาะ persona พี่ชัวร์ (creative) — เปิดช่อง reply ใน tool schema */
   allowReply?: boolean;
 }): Promise<JudgeResponse> {
   const tool = params.allowReply
@@ -319,7 +320,7 @@ export async function callJudge(params: {
         );
       }
 
-      // T8: reply เป็น optional — มีเฉพาะ persona creative (พี่มั่น)
+      // T9: reply เป็น optional — มีเฉพาะ persona creative (พี่ชัวร์)
       const rawReply = input.reply;
       const reply =
         typeof rawReply === 'string' && rawReply.trim().length > 0
