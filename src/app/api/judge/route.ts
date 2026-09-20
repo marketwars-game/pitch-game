@@ -2,7 +2,7 @@
 // FILE: src/app/api/judge/route.ts
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v1
+// VERSION: T9-v2
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-09-20
 // PURPOSE: POST /api/judge — รับ submissionId → ยิง 3 personas parallel → UPDATE scores
@@ -15,6 +15,8 @@
 // Response: { ok: true, status: 'done' | 'failed', personas_succeeded: number }
 //
 // CHANGE LOG:
+//   T9-v2 (2026-09-20): สร้าง user message แยกต่อ persona — The Analyst ได้ข้อความที่ล้างรูปแบบแล้ว
+//                       (ดู judge-prompts.ts T9-v6) · ตรรกะคะแนน/retry/การเก็บผล ไม่เปลี่ยน
 //   T9-v1 (2026-09-20): fallback comments/reply เวอร์ชันพี่ชัวร์ (ไม่แตะ logic)
 //   T8-v1 (2026-08-20): fallback comments/reply เวอร์ชันพี่มั่น (ไม่แตะ logic)
 //   T7-v3 (2026-08-04): ส่ง allowReply ให้ callJudge — เปิดช่อง reply เฉพาะพี่เก่ง
@@ -221,11 +223,12 @@ export async function POST(request: Request) {
   }
 
   // 5. Build user message + run 3 personas in parallel
-  const userMessage = buildUserMessage(caseData, sub.pitch);
+  // T9-v2: analyst ได้ข้อความที่ล้างรูปแบบ (** bullet ขึ้นบรรทัด เศษโค้ด) · อีก 2 คนได้ข้อความดิบ
+  const messageFor = (k: PersonaKey) => buildUserMessage(caseData, sub.pitch, k);
   const [analystResult, creativeResult, communicatorResult] = await Promise.all([
-    runPersona('analyst', userMessage),
-    runPersona('creative', userMessage),
-    runPersona('communicator', userMessage),
+    runPersona('analyst', messageFor('analyst')),
+    runPersona('creative', messageFor('creative')),
+    runPersona('communicator', messageFor('communicator')),
   ]);
 
   const results: Record<PersonaKey, JudgeResponse | null> = {

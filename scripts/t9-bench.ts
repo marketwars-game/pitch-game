@@ -2,7 +2,7 @@
 // FILE: scripts/t9-bench.ts
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v4
+// VERSION: T9-v6
 // CREATED: 2026-09-20
 // PURPOSE: ชุดทดสอบ A/B/C/D/E ของกรรมการ — ยิงผ่าน callJudge + SYSTEM_PROMPTS ตัวจริง
 //          (model / temperature / tool schema / retry เดียวกับ production ทุกอย่าง)
@@ -11,9 +11,16 @@
 // วิธีรัน (จาก root ของ repo):
 //   npx tsx scripts/t9-bench.ts
 //   npx tsx scripts/t9-bench.ts 3
+//   npx tsx scripts/t9-bench.ts 5 B,BJ
+//   npx tsx scripts/t9-bench.ts --print
 // (เลขท้าย = จำนวนรอบต่อข้อความ ค่าเริ่มต้น 2)
 //
 // CHANGE LOG:
+//   T9-v6 (2026-09-20): user message แยกต่อ persona ให้ตรงกับ route.ts T9-v2 (analyst ได้ข้อความล้างรูปแบบ)
+//   T9-v5 (2026-09-20): เพิ่มข้อความ BJ = ข้อความ B ที่มีเศษโค้ดติดมาจากการ copy (' + และย่อหน้า)
+//                       — จำลองเคสที่เทสบน preview แล้ว Analyst ให้ B แค่ 52
+//                       + โหมดเลือกข้อความ: npx tsx scripts/t9-bench.ts 5 B,BJ
+//                         (โหมดนี้ข้ามตารางเกณฑ์ แสดง min/max ต่อกรรมการแทน ใช้วัดอัตรา outlier)
 //   T9-v4 (2026-09-20): เกณฑ์ 18 คำห้วน/คำหยาบ/เครื่องหมายคำพูดค้าง = 0 · เกณฑ์ 15 ผ่อนเป็น ≤ 20%
 //   T9-v3 (2026-09-20): เพิ่มเกณฑ์ 16–17 ตรวจ reply ซ้ำ (ประโยคเดียวกัน / ขึ้นต้น "อ๋อ" / ปิดด้วยประโยคสำเร็จรูป)
 //   T9-v2 (2026-09-20): เกณฑ์ที่ไม่มีข้อมูลขึ้น N/A แทน PASS · เพิ่มเกณฑ์ 13–15 (ตรวจหักข้ามเลน + ความยาวคอมเมนต์)
@@ -82,6 +89,11 @@ const TESTS: TestMsg[] = [
       'พี่ที่ไม่เคยแตะหุ้นมาก่อน รู้ไว้ให้เข้าใจก่อนก็พอ อยากรู้ตรงไหนเพิ่มถามหนูได้เลย',
   },
   {
+    id: 'BJ',
+    label: 'ข้อความ B + เศษโค้ดจากการ copy (ตามที่เทสบน preview)',
+    text: '', // เติมด้านล่างจากข้อความ B
+  },
+  {
     id: 'C1',
     label: 'แพ้ชัด — เชียร์ + การันตี',
     text:
@@ -115,6 +127,18 @@ const TESTS: TestMsg[] = [
   },
 ];
 
+// BJ = ข้อความ B ที่แตกเป็นบรรทัด มี ' นำหน้า และ ' + ปิดท้ายทุกบรรทัด เหมือน copy มาจากไฟล์โค้ด
+{
+  const b = TESTS.find((t) => t.id === 'B');
+  const bj = TESTS.find((t) => t.id === 'BJ');
+  if (b && bj) {
+    const parts = b.text.split(/(?<=อีก |แล้ว |กำไร |หนักมาก |80% |หายได้จริง )/);
+    bj.text = parts
+      .map((seg, i) => (i === 0 ? `'${seg}' +` : `      '${seg}'${i === parts.length - 1 ? ',' : ' +'}`))
+      .join('\n');
+  }
+}
+
 // =====================================================
 // Run
 // =====================================================
@@ -122,13 +146,12 @@ type Cell = { score: number; comment: string; reply?: string } | null;
 type Row = { id: string; run: number; cells: Record<PersonaKey, Cell>; avg: number };
 
 async function judgeOnce(t: TestMsg, run: number): Promise<Row> {
-  const userMessage = buildUserMessage(DEFAULT_CASE, t.text);
   const results = await Promise.all(
     PERSONA_KEYS.map(async (k): Promise<[PersonaKey, Cell]> => {
       try {
         const r = await callJudge({
           systemPrompt: SYSTEM_PROMPTS[k],
-          userMessage,
+          userMessage: buildUserMessage(DEFAULT_CASE, t.text, k),
           allowReply: k === 'creative',
         });
         return [k, { score: r.score, comment: r.comment, reply: r.reply }];
@@ -149,6 +172,11 @@ function mean(xs: number[]): number {
 }
 
 async function main(): Promise<void> {
+  // --print = พิมพ์ข้อความเทสแบบสะอาด (ไว้ copy ไปวางใน /play โดยไม่มีเศษโค้ดติด) แล้วจบ
+  if (process.argv.includes('--print')) {
+    for (const t of TESTS) console.log(`\n===== ${t.id} · ${t.label} =====\n${t.text}`);
+    return;
+  }
   const runs = Math.max(1, Number(process.argv[2] ?? 2) || 2);
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error('ไม่พบ ANTHROPIC_API_KEY (ตรวจ .env.local ที่ root ของ repo)');
@@ -156,8 +184,14 @@ async function main(): Promise<void> {
   }
   console.log(`# T9 bench · model=${JUDGE_MODEL} · case=${DEFAULT_CASE.id} · runs=${runs}\n`);
 
+  const only = (process.argv[3] ?? '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+  const selected = only.length ? TESTS.filter((t) => only.includes(t.id)) : TESTS.filter((t) => t.id !== 'BJ');
+
   const rows: Row[] = [];
-  for (const t of TESTS) {
+  for (const t of selected) {
     const batch = await Promise.all(
       Array.from({ length: runs }, (_, i) => judgeOnce(t, i + 1))
     );
@@ -182,7 +216,27 @@ async function main(): Promise<void> {
 
   console.log('\n| id | avg/10 (mean) | label |');
   console.log('|---|---|---|');
-  for (const t of TESTS) console.log(`| ${t.id} | ${avgOf(t.id).toFixed(2)} | ${t.label} |`);
+  for (const t of selected) console.log(`| ${t.id} | ${avgOf(t.id).toFixed(2)} | ${t.label} |`);
+
+  // ---- โหมดเลือกข้อความ: แสดง min/max ต่อกรรมการ แล้วจบ (ไม่ตรวจเกณฑ์ข้ามข้อความ) ----
+  if (only.length) {
+    console.log('\n| id | กรรมการ | min | max | ทุกรอบ |');
+    console.log('|---|---|---|---|---|');
+    for (const t of selected) {
+      for (const k of PERSONA_KEYS) {
+        const xs = pOf(t.id, k);
+        console.log(`| ${t.id} | ${k} | ${Math.min(...xs)} | ${Math.max(...xs)} | ${xs.join('/')} |`);
+      }
+    }
+    console.log('\n## comments (เฉพาะคะแนนต่ำกว่า 80)');
+    for (const r of rows) {
+      for (const k of PERSONA_KEYS) {
+        const c = r.cells[k];
+        if (c && c.score < 80) console.log(`- ${r.id}#${r.run} ${k} ${c.score}: ${c.comment}`);
+      }
+    }
+    return;
+  }
 
   // ---- เกณฑ์ผ่าน ----
   const replies = rows.map((r) => r.cells.creative?.reply ?? '').filter(Boolean);
