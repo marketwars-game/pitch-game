@@ -2,7 +2,7 @@
 // FILE: src/components/presenter/PresenterLobbyScreen.tsx
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T9-v1
+// VERSION: T11-v1
 // CREATED: 2026-05-07
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: จอ LOBBY — QR + รายชื่อผู้เล่นทุกคน
@@ -12,6 +12,7 @@
 //          - ไม่แสดงเพดานจำนวนคน (ไม่มี "/80")
 //
 // CHANGE LOG:
+//   T11-v1 (2026-11-26): ขั้นตอนบนจอ "ใส่ชื่อ เช่น Oan.C" ตามกติกาชื่อของงาน (ข้อความล้วน)
 //   T9-v1 (2026-11-26): BU FinTech Workshop — คำโปรยให้ตรงกับ landing/มือถือ + "รอวิทยากรกดเริ่ม" (ข้อความล้วน)
 //   T7-v1 (2026-08-04): เขียนใหม่ — layout ใหม่, ชื่อครบทุกคน, QR popup,
 //                       เลิกใช้ PILL_GRID_MAX (ไม่ตัดชื่อทิ้งแล้ว)
@@ -121,7 +122,7 @@ export function PresenterLobbyScreen({ players, newPlayerIds }: Props) {
             <div className="t7-steps">
               <b>สแกน</b>
               <i>→</i>
-              <b>ใส่ชื่อเล่น</b>
+              <b>ใส่ชื่อ เช่น Oan.C</b>
               <i>→</i>
               <b>รอสัญญาณ</b>
             </div>

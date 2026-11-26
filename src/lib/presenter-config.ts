@@ -2,7 +2,7 @@
 // FILE: src/lib/presenter-config.ts
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v2
+// VERSION: T11-v1
 // CREATED: 2026-05-07
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: Static config สำหรับ Presenter View เท่านั้น —
@@ -12,6 +12,7 @@
 //          - Pill grid limits
 //
 // CHANGE LOG:
+//   T11-v1 (2026-11-26): URL_BAR_CAPTION ตามกติกาชื่อของงาน (ค่าอื่นไม่เปลี่ยน)
 //   T9-v2 (2026-11-26): BU FinTech Workshop — BRAND_RIGHT 'BU' + SESSION_NAME 'FINTECH & DIGITAL INVESTMENT' (ค่าอื่นไม่เปลี่ยน)
 //   T9-v1 (2026-09-20): brand AXA + ข้อความกรรมการ/ข้อความลอยเวอร์ชันพี่ชัวร์
 //   T8-v1 (2026-08-20): แบรนด์ SCG + SESSION_NAME + ข้อความกรรมการ 3 ชุด + stream snippets เวอร์ชันพี่มั่น
@@ -32,7 +33,7 @@
 export const URL_BAR_TEXT = 'bit.ly/linepitch';
 
 // Caption ใต้ URL bar (Thai)
-export const URL_BAR_CAPTION = 'สแกน QR ด้วยมือถือ — ใส่ชื่อเล่น — รอสัญญาณ';
+export const URL_BAR_CAPTION = 'สแกน QR ด้วยมือถือ — ใส่ชื่อ เช่น Oan.C — รอสัญญาณ';
 
 // QR target URL (ของจริงที่ bit.ly redirect ไป) — ใช้ generate QR
 // T7-v2: QR encode URL ตรง — สแกนแล้วเข้าเกมทันที ไม่ต้องรอ redirect ของ bit.ly

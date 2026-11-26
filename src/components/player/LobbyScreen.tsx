@@ -2,7 +2,7 @@
 // FILE: src/components/player/LobbyScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v2
+// VERSION: T11-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: Lobby screen — รองรับ 3 states จาก mockup-v5:
@@ -11,6 +11,8 @@
 //          State 3: blocked (late join — phase ≠ LOBBY แต่ไม่มี player)
 //
 // CHANGE LOG:
+//   T11-v1 (2026-11-26): กติกาชื่อ "ชื่อเล่น.อักษรแรกของชื่อจริง" (อังกฤษเท่านั้น) — จัดรูปแบบระหว่างพิมพ์
+//                        + คำแนะนำ/คำเตือนใต้ช่อง + ปุ่มเข้าห้องกดได้เมื่อชื่อผ่าน (lib/name-rule.ts)
 //   T9-v2 (2026-11-26): BU FinTech Workshop — brand DIME × BU / FINTECH & DIGITAL INVESTMENT + "MC" → "วิทยากร" (ข้อความล้วน ไม่แตะ logic)
 //   T9-v1 (2026-09-20): lobby เวอร์ชันพี่ชัวร์ / AXA
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น + แบรนด์ DIME × SCG (ไม่แตะ logic)
@@ -25,6 +27,13 @@
 import { useState, useEffect } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { NICKNAME_MAX_LENGTH } from '@/lib/types';
+import {
+  NAME_EXAMPLE,
+  NAME_HINT,
+  formatEventName,
+  nameBlocked,
+  nameWarning,
+} from '@/lib/name-rule';
 import type { PlayerSession } from '@/hooks/usePlayer';
 
 interface LobbyScreenProps {
@@ -48,11 +57,14 @@ export function LobbyScreen({
   const playerCount = useLivePlayerCount(gameId);
 
   const trimmedNickname = nickname.trim();
-  const canSubmit = trimmedNickname.length > 0 && !joining;
+  // T11: กติกาชื่อของงาน — "ชื่อเล่น.อักษรแรกของชื่อจริง" ภาษาอังกฤษเท่านั้น (ดู lib/name-rule.ts)
+  const nameWarn = nameWarning(nickname);
+  const canSubmit =
+    trimmedNickname.length > 0 && !nameBlocked(nickname) && !joining;
 
   const handleJoin = () => {
     if (!canSubmit || !onJoin) return;
-    onJoin(trimmedNickname);
+    onJoin(formatEventName(nickname, true));
   };
 
   // ---------- State 3: Blocked (late join) ----------
@@ -170,17 +182,21 @@ export function LobbyScreen({
 
       <div style={{ margin: '16px 0 14px' }}>
         <div style={{ fontSize: 12, color: '#A1A1AA', marginBottom: 6, fontWeight: 500 }}>
-          ชื่อเล่น
+          ชื่อของคุณ (ภาษาอังกฤษ)
         </div>
         <input
           autoFocus
           value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
+          onChange={(e) => setNickname(formatEventName(e.target.value))}
+          autoCapitalize="words"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleJoin();
           }}
           maxLength={NICKNAME_MAX_LENGTH}
-          placeholder="ชื่อเล่นของคุณ (คนอื่นเห็นบนจอ)"
+          placeholder={`เช่น ${NAME_EXAMPLE}`}
           disabled={joining}
           style={{
             width: '100%',
@@ -197,6 +213,20 @@ export function LobbyScreen({
           onFocus={(e) => (e.currentTarget.style.borderColor = '#5DF591')}
           onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
         />
+        <div style={{ fontSize: 11.5, color: '#71717A', marginTop: 6, lineHeight: 1.5 }}>
+          {NAME_HINT}
+        </div>
+        <div
+          style={{
+            fontSize: 11.5,
+            color: '#FBBF24',
+            marginTop: 2,
+            minHeight: 17,
+            lineHeight: 1.5,
+          }}
+        >
+          {nameWarn ?? ''}
+        </div>
       </div>
 
       <button
