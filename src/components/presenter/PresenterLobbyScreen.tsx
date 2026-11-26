@@ -2,7 +2,7 @@
 // FILE: src/components/presenter/PresenterLobbyScreen.tsx
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T11-v1
+// VERSION: T11-v2
 // CREATED: 2026-05-07
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: จอ LOBBY — QR + รายชื่อผู้เล่นทุกคน
@@ -12,6 +12,7 @@
 //          - ไม่แสดงเพดานจำนวนคน (ไม่มี "/80")
 //
 // CHANGE LOG:
+//   T11-v2 (2026-11-26): แก้ชื่อตกขอบเมื่อคนเยอะ — scale-to-fit วัดซ้ำจนพอดี (binary search) + MIN_SCALE 0.45
 //   T11-v1 (2026-11-26): ขั้นตอนบนจอ "ใส่ชื่อ เช่น Oan.C" ตามกติกาชื่อของงาน (ข้อความล้วน)
 //   T9-v1 (2026-11-26): BU FinTech Workshop — คำโปรยให้ตรงกับ landing/มือถือ + "รอวิทยากรกดเริ่ม" (ข้อความล้วน)
 //   T7-v1 (2026-08-04): เขียนใหม่ — layout ใหม่, ชื่อครบทุกคน, QR popup,
@@ -32,7 +33,7 @@ import { DEFAULT_CASE } from '@/lib/stock-data';
 import { T7Ambient, T7TopBar } from './PresenterChrome';
 
 /** ย่อได้ต่ำสุด — ถ้าชนเพดานนี้แปลว่าต้องเปลี่ยน layout ไม่ใช่ย่อต่อ */
-const MIN_SCALE = 0.55;
+const MIN_SCALE = 0.45; // T11: 0.55 → 0.45 รองรับ ~300 ชื่อบนจอ 1080p
 
 type Props = {
   players: PlayerRow[]; // sorted DESC by joined_at (newest first)
@@ -51,12 +52,32 @@ export function PresenterLobbyScreen({ players, newPlayerIds }: Props) {
     const names = namesRef.current;
     if (!box || !names) return;
     const avail = box.clientHeight;
-    // scrollHeight = ความสูงธรรมชาติ ไม่ได้รับผลจาก transform
-    const natural = names.scrollHeight;
-    const next =
-      natural > avail && natural > 0
-        ? Math.max(MIN_SCALE, avail / natural)
-        : 1;
+    if (avail <= 0) return;
+
+    // T11: วัดซ้ำจนพอดี (เดิมคำนวณรอบเดียว → ที่ 180 คน ชื่อ 54 ชื่อตกขอบล่าง)
+    // ย่อ = แถวกว้างขึ้น (width = 100/s %) → จำนวนแถวลด → ความสูงธรรมชาติเปลี่ยน
+    // จึงต้องลองค่า s แล้ววัด scrollHeight จริงที่ความกว้างนั้น (scrollHeight ไม่ได้รับผลจาก transform)
+    const fits = (s: number): boolean => {
+      names.style.width = `${100 / s}%`;
+      return names.scrollHeight * s <= avail;
+    };
+
+    let next = 1;
+    if (!fits(1)) {
+      // binary search หา scale ที่ใหญ่ที่สุดที่ยังพอดี ในช่วง [MIN_SCALE, 1]
+      let lo = MIN_SCALE;
+      let hi = 1;
+      if (fits(lo)) {
+        for (let i = 0; i < 8; i++) {
+          const mid = (lo + hi) / 2;
+          if (fits(mid)) lo = mid;
+          else hi = mid;
+        }
+      }
+      next = lo;
+    }
+    // คืนค่า width ให้ตรงกับ scale ที่เลือก (React จะ set ซ้ำค่าเดียวกันตอน render)
+    names.style.width = next < 1 ? `${100 / next}%` : '100%';
     setScale(next);
   }, []);
 

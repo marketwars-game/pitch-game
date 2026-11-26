@@ -2,7 +2,7 @@
 // FILE: src/components/player/WritingScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T11-v1
+// VERSION: T11-v2
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: หน้าเขียน — หน้าจอแชทแบบ LINE
@@ -16,6 +16,7 @@
 //          - submitting / submitError states
 //
 // CHANGE LOG:
+//   T11-v2 (2026-11-26): เอากล่องโจทย์ (TaskNote) ออกจากหน้าเขียน — เหลือบับเบิลพี่ชัวร์ + ช่องตอบ เหมือนแชทจริง (ข้อห้ามยังอยู่บนจอใหญ่)
 //   T11-v1 (2026-11-26): เอาแถบตัวช่วย WHY (ToolChips) + ปุ่ม 🧰 ออกจากหน้าเขียน — เหลือแชทล้วนแบบ LINE
 //                        ToolTray.tsx ยังอยู่ในรีโปแต่ไม่ถูกเรียก · auto-submit / min-max / submit ไม่เปลี่ยน
 //   T9-v2 (2026-11-26): BU FinTech Workshop — ป้ายวันในแชท "วันนี้" (ตัด "ระหว่าง session") (ข้อความล้วน)
@@ -40,7 +41,6 @@ import {
   ChatDay,
   KengIntro,
   MyBubble,
-  TaskNote,
   KengChatStyles,
   CHAT_CHROME,
   CHAT_BORDER,
@@ -134,8 +134,6 @@ export function WritingScreen({
         <ChatDay label="วันนี้" />
 
         <KengIntro caseData={caseData} />
-
-        {!isSubmitted && <TaskNote rules={caseData?.rules ?? []} />}
 
         {isSubmitted ? (
           <>
