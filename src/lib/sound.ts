@@ -2,7 +2,7 @@
 // FILE: src/lib/sound.ts
 // PROJECT: pitch-game
 // TASK: T11 — LINE หาพี่ชัวร์ (DIME x BU · FinTech & Digital Investment)
-// VERSION: T11-v1
+// VERSION: T11-v2
 // CREATED: 2026-11-26
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: ทะเบียนไฟล์เสียงของจอใหญ่ (Presenter) — BGM 4 เพลง + SFX 9 เสียง
@@ -11,17 +11,24 @@
 //          เสียงเล่นเฉพาะจอใหญ่ ไม่มีเสียงบนมือถือผู้เล่น
 //
 // CHANGE LOG:
+//   T11-v2 (2026-11-26): + bgm_results (ช่วงนาฬิกาแดง) + sfx_buzzer (ออดหมดเวลา) + ค่าคงที่ช่วง urgent
 //   T11-v1 (2026-11-26): Initial — port จาก market-wars + phase map ของ pitch-game
 // =====================================================
 import type { GamePhase } from '@/lib/types';
 
 export const SOUND_BASE = '/sounds';
 
-export type BgmKey = 'bgm_lobby' | 'bgm_play' | 'bgm_suspense' | 'bgm_final';
+export type BgmKey =
+  | 'bgm_lobby'
+  | 'bgm_play'
+  | 'bgm_results'
+  | 'bgm_suspense'
+  | 'bgm_final';
 
 export const BGM_FILES: Record<BgmKey, string> = {
   bgm_lobby: `${SOUND_BASE}/bgm_lobby.mp3`,
   bgm_play: `${SOUND_BASE}/bgm_play.mp3`,
+  bgm_results: `${SOUND_BASE}/bgm_results.mp3`,
   bgm_suspense: `${SOUND_BASE}/bgm_suspense.mp3`,
   bgm_final: `${SOUND_BASE}/bgm_final.mp3`,
 };
@@ -31,6 +38,7 @@ export type SfxKey =
   | 'sfx_market_bell'
   | 'sfx_countdown'
   | 'sfx_timeup'
+  | 'sfx_buzzer'
   | 'sfx_join'
   | 'sfx_drumroll'
   | 'sfx_reveal'
@@ -42,6 +50,8 @@ export const SFX_FILES: Record<SfxKey, string> = {
   sfx_market_bell: `${SOUND_BASE}/sfx_market_bell.mp3`,
   sfx_countdown: `${SOUND_BASE}/sfx_countdown.mp3`,
   sfx_timeup: `${SOUND_BASE}/sfx_timeup.mp3`,
+  // T11-v2: ออดหมดเวลา — สังเคราะห์เอง (คลื่นสี่เหลี่ยม 2 เสียง 1.5 วิ) ไม่ได้มาจาก market-wars
+  sfx_buzzer: `${SOUND_BASE}/sfx_buzzer.wav`,
   sfx_join: `${SOUND_BASE}/sfx_join.mp3`,
   sfx_drumroll: `${SOUND_BASE}/sfx_drumroll.mp3`,
   sfx_reveal: `${SOUND_BASE}/sfx_reveal.mp3`,
@@ -59,6 +69,10 @@ export const PHASE_BGM: Record<GamePhase, BgmKey> = {
 
 // BGM เบากว่า SFX — วิทยากรต้องพูดทับได้
 export const BGM_VOLUME = 0.35;
+// T11-v2: ช่วงนาฬิกาแดง (30 วิสุดท้ายของเวลาเขียน) — เพลงเร้าใจ + ดังขึ้น
+export const URGENT_FROM_SEC = 30;
+export const URGENT_BGM: BgmKey = 'bgm_results';
+export const BGM_VOLUME_URGENT = 0.55;
 export const SFX_VOLUME = 0.9;
 export const BGM_FADE_MS = 800;
 

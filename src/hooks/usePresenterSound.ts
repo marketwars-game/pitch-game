@@ -2,7 +2,7 @@
 // FILE: src/hooks/usePresenterSound.ts
 // PROJECT: pitch-game
 // TASK: T11 — LINE หาพี่ชัวร์ (DIME x BU · FinTech & Digital Investment)
-// VERSION: T11-v1
+// VERSION: T11-v2
 // CREATED: 2026-11-26
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: ตัวจัดการเสียงของจอใหญ่ — ปลดล็อก autoplay + SFX + BGM crossfade + mute
@@ -12,6 +12,7 @@
 //          - ไม่แตะ Supabase / game state
 //
 // CHANGE LOG:
+//   T11-v2 (2026-11-26): playBgm รับ volume (ปรับความดังเพลงเดิมได้) + stopSfx (ตัดรัวกลองตอนชื่อเด้ง)
 //   T11-v1 (2026-11-26): Initial
 // =====================================================
 'use client';
@@ -34,7 +35,10 @@ export type PresenterSound = {
   muted: boolean;
   unlock: () => void;
   playSfx: (key: SfxKey) => void;
-  playBgm: (key: BgmKey) => void;
+  /** volume ไม่ใส่ = BGM_VOLUME · key เดิมแต่ volume ใหม่ = ปรับความดังอย่างเดียว */
+  playBgm: (key: BgmKey, volume?: number) => void;
+  /** หยุด SFX ที่กำลังเล่น (ใช้ตัดเสียงรัวกลองตอนชื่อเด้ง) */
+  stopSfx: (key: SfxKey) => void;
   stopBgm: () => void;
   toggleMute: () => void;
 };
@@ -46,6 +50,7 @@ export function usePresenterSound(): PresenterSound {
   const bgmRef = useRef<Partial<Record<BgmKey, HTMLAudioElement>>>({});
   const sfxRef = useRef<Partial<Record<SfxKey, HTMLAudioElement>>>({});
   const currentBgm = useRef<BgmKey | null>(null);
+  const currentBgmVol = useRef(BGM_VOLUME);
   const fadeTimers = useRef<Record<string, ReturnType<typeof setInterval>>>({});
 
   // สร้าง audio element ครั้งเดียว (client เท่านั้น) + preload
@@ -129,9 +134,18 @@ export function usePresenterSound(): PresenterSound {
   }, []);
 
   const playBgm = useCallback(
-    (key: BgmKey) => {
+    (key: BgmKey, volume: number = BGM_VOLUME) => {
       if (typeof window === 'undefined') return;
-      if (currentBgm.current === key) return;
+      if (currentBgm.current === key) {
+        // เพลงเดิม — ปรับความดังอย่างเดียว (ถ้าเปลี่ยน)
+        if (currentBgmVol.current !== volume) {
+          currentBgmVol.current = volume;
+          const cur = bgmRef.current[key];
+          if (cur && !mutedRef.current) fadeTo(cur, volume);
+        }
+        return;
+      }
+      currentBgmVol.current = volume;
       const next = bgmRef.current[key];
       const prevKey = currentBgm.current;
       const prev = prevKey ? bgmRef.current[prevKey] : null;
@@ -139,7 +153,7 @@ export function usePresenterSound(): PresenterSound {
       if (next) {
         next.volume = 0;
         next.play().catch(() => {});
-        fadeTo(next, mutedRef.current ? 0 : BGM_VOLUME);
+        fadeTo(next, mutedRef.current ? 0 : volume);
       }
       if (prev && prev !== next) {
         fadeTo(prev, 0, () => {
@@ -164,6 +178,17 @@ export function usePresenterSound(): PresenterSound {
     }
   }, []);
 
+  const stopSfx = useCallback((key: SfxKey) => {
+    const el = sfxRef.current[key];
+    if (!el) return;
+    try {
+      el.pause();
+      el.currentTime = 0;
+    } catch {
+      // เงียบ
+    }
+  }, []);
+
   const stopBgm = useCallback(() => {
     const key = currentBgm.current;
     const cur = key ? bgmRef.current[key] : null;
@@ -182,11 +207,11 @@ export function usePresenterSound(): PresenterSound {
     setMuted(next);
     const key = currentBgm.current;
     const cur = key ? bgmRef.current[key] : null;
-    if (cur) fadeTo(cur, next ? 0 : BGM_VOLUME);
+    if (cur) fadeTo(cur, next ? 0 : currentBgmVol.current);
     if (next) {
       (Object.values(sfxRef.current) as HTMLAudioElement[]).forEach((a) => a && a.pause());
     }
   }, [fadeTo]);
 
-  return { isUnlocked, muted, unlock, playSfx, playBgm, stopBgm, toggleMute };
+  return { isUnlocked, muted, unlock, playSfx, stopSfx, playBgm, stopBgm, toggleMute };
 }

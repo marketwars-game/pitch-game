@@ -2,7 +2,7 @@
 // FILE: src/components/presenter/PresenterView.tsx
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T11-v2
+// VERSION: T11-v3
 // CREATED: 2026-05-05 (T0-v2 placeholder)
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: Top-level Presenter component.
@@ -16,6 +16,7 @@
 //          space to begin" mental model.
 //
 // CHANGE LOG:
+//   T11-v3 (2026-11-26): ตัดเสียงรัวกลองตอนชื่อเด้ง (stopSfx) · step 4 ไม่มีเสียง · step 5 เสียงเปลี่ยนจังหวะ
 //   T11-v2 (2026-11-26): ส่ง onDrumroll ให้ PresenterResultsScreen (รัวกลองก่อนเปิดอันดับถัดไป)
 //   T11-v1 (2026-11-26): เสียงจอใหญ่ — usePresenterSound + PresenterSoundDirector · ปลดล็อกตอนปิด landing · ไม่แตะ phase routing
 //   T7-v1 (2026-08-04): ห่อทุก phase ด้วย <PresenterStage> (fit-to-screen)
@@ -44,7 +45,7 @@ export function PresenterView() {
   const { game, players, submissions, newPlayerIds, loading } = usePresenterState();
   // T11: เสียงจอใหญ่ — ปลดล็อกด้วย gesture เดียวกับที่ปิดหน้า landing
   const sound = usePresenterSound();
-  const { unlock: unlockSound, playBgm, playSfx } = sound;
+  const { unlock: unlockSound, playBgm, playSfx, stopSfx } = sound;
 
   // dismiss LANDING on Space/Enter or click
   useEffect(() => {
@@ -71,14 +72,16 @@ export function PresenterView() {
   // T11: เสียงตอนเปิดผลทีละขั้น (step จาก PresenterResultsScreen)
   const handleRevealStep = useCallback(
     (step: number) => {
+      // ชื่อเด้งขึ้น = กลองหยุดพอดี
+      if (step >= 1 && step <= 3) stopSfx('sfx_drumroll');
       if (step === 1 || step === 2) playSfx('sfx_reveal');
       else if (step === 3) {
         playSfx('sfx_fanfare');
         playSfx('sfx_confetti');
         playBgm('bgm_final');
-      } else if (step >= 4) playSfx('sfx_transition');
+      } else if (step === 5) playSfx('sfx_transition');
     },
-    [playBgm, playSfx]
+    [playBgm, playSfx, stopSfx]
   );
 
   const handleDrumroll = useCallback(() => playSfx('sfx_drumroll'), [playSfx]);

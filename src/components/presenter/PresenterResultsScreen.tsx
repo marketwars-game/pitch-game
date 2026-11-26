@@ -2,7 +2,7 @@
 // FILE: src/components/presenter/PresenterResultsScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T11-v2
+// VERSION: T11-v3
 // CREATED: 2026-05-07
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: จอผลรอบสุดท้าย — รับใช้องก์ 2-3 ของการเฉลย
@@ -13,6 +13,7 @@
 //          - อันดับ 4-10
 //
 // CHANGE LOG:
+//   T11-v3 (2026-11-26): ประกาศผลเดินเองทั้งหมดหลัง admin กดเปิดผล — หัวข้อ 3 วิ → กลอง → อันดับ 3 → กลอง → 2 → กลอง → แชมป์ → ข้อความแชมป์ 12 วิ → อันดับ 4–10 · SPACE = ข้าม
 //   T11-v2 (2026-11-26): podium เดินเอง — กด 1 ครั้ง เปิดอันดับ 3 → 2 → แชมป์ เว้น 3.6 วิ แล้วหยุดรอ · SPACE = ข้าม
 //                        ขั้น 4 (ข้อความแชมป์) และ 5 (อันดับ 4–10) ยังกดเอง · การจัดอันดับไม่เปลี่ยน
 //   T11-v1 (2026-11-26): prop onRevealStep (แจ้ง step ให้ผู้กำกับเสียง) — ลำดับ/ตรรกะการเปิดผลไม่เปลี่ยน
@@ -107,11 +108,20 @@ type Row = {
   reply?: string;
 };
 
-// T11: podium เดินเอง — กด 1 ครั้งที่ step 0 แล้วจอเปิดอันดับ 3 → 2 → แชมป์ เว้นช่วงละเท่านี้
-// แล้วหยุดรอที่แชมป์ (ข้อความแชมป์ / อันดับ 4–10 ยังกดเอง)
-const AUTO_PODIUM_GAP_MS = 3600;
-// เริ่มรัวกลองก่อนเปิดอันดับถัดไปเท่านี้
-const DRUMROLL_LEAD_MS = 2400;
+// T11-v3: ประกาศผลเดินเองทั้งหมด — เริ่มทันทีที่จอเข้าหน้าผล (admin กดเปิดผล) ไม่ต้องกดจอใหญ่
+// แต่ละ step: อยู่กี่ ms แล้วไป step ถัดไป (nextMs) · เริ่มรัวกลองที่ ms เท่าไร (drumMs)
+// กลองรัว → ชื่อเด้งขึ้นโพเดียมพร้อมกลองหยุด (ผู้กำกับเสียงตัดกลองใน onRevealStep)
+//   0 หัวข้อคำถาม 3 วิ → กลอง 4 วิ → 1 อันดับ 3 (วินาทีที่ 7)
+//   1 ค้าง 1.5 วิ → กลอง 4 วิ → 2 อันดับ 2 (12.5)
+//   2 ค้าง 1.5 วิ → กลอง 5 วิ → 3 แชมป์ (19)
+//   3 ค้าง 6 วิ → 4 ข้อความแชมป์ (25) · 4 ค้าง 12 วิ → 5 อันดับ 4–10 (37) แล้วหยุด
+const AUTO_PLAN: Record<number, { nextMs: number; drumMs?: number }> = {
+  0: { nextMs: 7000, drumMs: 3000 },
+  1: { nextMs: 5500, drumMs: 1500 },
+  2: { nextMs: 6500, drumMs: 1500 },
+  3: { nextMs: 6000 },
+  4: { nextMs: 12000 },
+};
 
 export function PresenterResultsScreen({
   game,
@@ -174,20 +184,21 @@ export function PresenterResultsScreen({
     if (step > 0) onRevealStep?.(step);
   }, [step, onRevealStep]);
 
-  // T11: เดินเองช่วง podium — อยู่ที่อันดับ 3 หรือ 2 → ตั้งเวลาเปิดขั้นถัดไป
-  // กด SPACE ระหว่างนี้ = ข้ามไปขั้นถัดไปทันที (cleanup ล้าง timer เดิม แล้วตั้งใหม่จาก step ใหม่)
+  // T11-v3: เดินเองทุก step ตาม AUTO_PLAN — กด SPACE = ข้ามไป step ถัดไปทันที
+  // (cleanup ล้าง timer ของ step เดิม แล้ว effect ตั้งใหม่จาก step ใหม่)
   useEffect(() => {
-    if (step !== 1 && step !== 2) return;
-    const drum = setTimeout(
-      () => onDrumroll?.(),
-      AUTO_PODIUM_GAP_MS - DRUMROLL_LEAD_MS
-    );
+    const plan = AUTO_PLAN[step];
+    if (!plan) return;
+    const drum =
+      plan.drumMs !== undefined
+        ? setTimeout(() => onDrumroll?.(), plan.drumMs)
+        : null;
     const next = setTimeout(
       () => setStep((s) => (s === step ? s + 1 : s)),
-      AUTO_PODIUM_GAP_MS
+      plan.nextMs
     );
     return () => {
-      clearTimeout(drum);
+      if (drum) clearTimeout(drum);
       clearTimeout(next);
     };
   }, [step, onDrumroll]);
@@ -220,7 +231,7 @@ export function PresenterResultsScreen({
 
   const cue =
     step === 0
-      ? 'เปิด Top 3'
+      ? 'ข้ามไปอันดับ 3'
       : step === 1
         ? 'ข้ามไปอันดับ 2'
         : step === 2
