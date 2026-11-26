@@ -2,9 +2,9 @@
 // FILE: src/components/presenter/PresenterView.tsx
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// VERSION: T11-v1
 // CREATED: 2026-05-05 (T0-v2 placeholder)
-// LAST MODIFIED: 2026-05-07
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: Top-level Presenter component.
 //          - Renders Phase 0 (LANDING) until user dismisses (spacebar/click)
 //          - After dismiss, routes to LOBBY/WRITING/JUDGING/RESULTS based on game.phase
@@ -16,6 +16,7 @@
 //          space to begin" mental model.
 //
 // CHANGE LOG:
+//   T11-v1 (2026-11-26): เสียงจอใหญ่ — usePresenterSound + PresenterSoundDirector · ปลดล็อกตอนปิด landing · ไม่แตะ phase routing
 //   T7-v1 (2026-08-04): ห่อทุก phase ด้วย <PresenterStage> (fit-to-screen)
 //                       + ส่ง submissions ให้ PresenterJudgingScreen
 //                       state machine + usePresenterState เหมือนเดิมทุกอย่าง
@@ -25,7 +26,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { usePresenterState } from '@/hooks/usePresenterState';
 import { LANDING_DISMISS_KEYS } from '@/lib/presenter-config';
 import { PresenterStage } from './PresenterStage';
@@ -34,10 +35,15 @@ import { PresenterLobbyScreen } from './PresenterLobbyScreen';
 import { PresenterWritingScreen } from './PresenterWritingScreen';
 import { PresenterJudgingScreen } from './PresenterJudgingScreen';
 import { PresenterResultsScreen } from './PresenterResultsScreen';
+import { PresenterSoundDirector } from './PresenterSoundDirector';
+import { usePresenterSound } from '@/hooks/usePresenterSound';
 
 export function PresenterView() {
   const [showLanding, setShowLanding] = useState(true);
   const { game, players, submissions, newPlayerIds, loading } = usePresenterState();
+  // T11: เสียงจอใหญ่ — ปลดล็อกด้วย gesture เดียวกับที่ปิดหน้า landing
+  const sound = usePresenterSound();
+  const { unlock: unlockSound, playBgm, playSfx } = sound;
 
   // dismiss LANDING on Space/Enter or click
   useEffect(() => {
@@ -45,17 +51,44 @@ export function PresenterView() {
     const onKey = (e: KeyboardEvent) => {
       if ((LANDING_DISMISS_KEYS as readonly string[]).includes(e.code)) {
         e.preventDefault();
+        unlockSound();
         setShowLanding(false);
       }
     };
-    const onClick = () => setShowLanding(false);
+    const onClick = () => {
+      unlockSound();
+      setShowLanding(false);
+    };
     window.addEventListener('keydown', onKey);
     window.addEventListener('click', onClick);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('click', onClick);
     };
-  }, [showLanding]);
+  }, [showLanding, unlockSound]);
+
+  // T11: เสียงตอนเปิดผลทีละขั้น (step จาก PresenterResultsScreen)
+  const handleRevealStep = useCallback(
+    (step: number) => {
+      if (step === 1 || step === 2) playSfx('sfx_reveal');
+      else if (step === 3) {
+        playSfx('sfx_fanfare');
+        playSfx('sfx_confetti');
+        playBgm('bgm_final');
+      } else if (step >= 4) playSfx('sfx_transition');
+    },
+    [playBgm, playSfx]
+  );
+
+  const soundDirector = (
+    <PresenterSoundDirector
+      sound={sound}
+      active={!showLanding}
+      phase={game?.phase ?? null}
+      playerCount={players.length}
+      writingEndsAt={game?.writing_ends_at ?? null}
+    />
+  );
 
   // Phase 0
   if (showLanding) {
@@ -99,6 +132,7 @@ export function PresenterView() {
           game={game}
           players={players}
           submissions={submissions}
+          onRevealStep={handleRevealStep}
         />
       );
       break;
@@ -106,5 +140,10 @@ export function PresenterView() {
       inner = <PresenterLobbyScreen players={players} newPlayerIds={newPlayerIds} />;
   }
 
-  return <PresenterStage>{inner}</PresenterStage>;
+  return (
+    <>
+      <PresenterStage>{inner}</PresenterStage>
+      {soundDirector}
+    </>
+  );
 }

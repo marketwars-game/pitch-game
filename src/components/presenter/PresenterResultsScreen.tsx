@@ -2,9 +2,9 @@
 // FILE: src/components/presenter/PresenterResultsScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v2
+// VERSION: T11-v1
 // CREATED: 2026-05-07
-// LAST MODIFIED: 2026-09-20
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: จอผลรอบสุดท้าย — รับใช้องก์ 2-3 ของการเฉลย
 //          - เปิดทีละขั้นด้วย SPACE/คลิก ให้ MC คุมจังหวะพากลุ้นเอง
 //            (state ฝั่ง client ล้วน ไม่แตะ DB / ไม่แตะ phase)
@@ -13,6 +13,7 @@
 //          - อันดับ 4-10
 //
 // CHANGE LOG:
+//   T11-v1 (2026-11-26): prop onRevealStep (แจ้ง step ให้ผู้กำกับเสียง) — ลำดับ/ตรรกะการเปิดผลไม่เปลี่ยน
 //   T9-v2 (2026-09-20): 🔴 FIX — ข้อความแชมป์ยาวแล้วโดนตัดทั้งหัวและท้าย (font 24px ตายตัว +
 //                        justify-content:center + overflow:hidden) พบตอนเทส preview ด้วยข้อความ ~900 ตัวอักษร
 //                        งานนี้ผู้เล่นใช้ AI ช่วยเขียน → ข้อความยาวกว่า T7/T8 มาก (เพดาน 1500)
@@ -87,6 +88,8 @@ type Props = {
   game: GameRow;
   players: PlayerRow[];
   submissions: SubmissionRow[];
+  /** T11: เรียกเมื่อเปิดผลถึง step ใหม่ (1–5) — ใช้สั่งเสียง */
+  onRevealStep?: (step: number) => void;
 };
 
 type Row = {
@@ -100,7 +103,7 @@ type Row = {
   reply?: string;
 };
 
-export function PresenterResultsScreen({ game, players, submissions }: Props) {
+export function PresenterResultsScreen({ game, players, submissions, onRevealStep }: Props) {
   const nameOf = useMemo(() => {
     const map = new Map<string, string>();
     for (const p of players) map.set(p.id, p.nickname);
@@ -149,6 +152,11 @@ export function PresenterResultsScreen({ game, players, submissions }: Props) {
     lockRef.current = now;
     setStep((s) => Math.min(5, s + 1));
   }, []);
+
+  // T11: แจ้ง step ที่เพิ่งเปิดให้ผู้กำกับเสียง (ไม่กระทบลำดับการเปิดผล)
+  useEffect(() => {
+    if (step > 0) onRevealStep?.(step);
+  }, [step, onRevealStep]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
