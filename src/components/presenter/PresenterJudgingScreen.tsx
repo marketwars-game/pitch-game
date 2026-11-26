@@ -2,15 +2,16 @@
 // FILE: src/components/presenter/PresenterJudgingScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v1
+// VERSION: T11-v1
 // CREATED: 2026-05-07
-// LAST MODIFIED: 2026-09-20
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: จอระหว่างรอ AI ตัดสิน (~1-2 นาที)
 //          - พื้นหลังเป็นข้อความจริงของผู้เล่นลอยขึ้น (ไม่มีชื่อ) ให้ MC เล่นต่อได้
 //          - พี่มั่นอยู่กลาง เน้นสีทอง เพราะองก์ 1 ที่ตามมาคือข้อความจากแก
 //          - ความคืบหน้าแยกรายกรรมการ (ของจริงยิงขนาน เสร็จไม่พร้อมกัน)
 //
 // CHANGE LOG:
+//   T11-v1 (2026-11-26): แถบความคืบหน้าวิ่งไล่จาก 0 ไปหาค่าจริง (12/16/20 วิ ไม่เกินค่าจริง) + ตรา "ตัดสินครบ" รายกรรมการ + หัวข้อ "ผลออกแล้ว พร้อมประกาศ" + onProgressCue
 //   T9-v1 (2026-09-20): headline พี่ชัวร์ + ไอคอน The Analyst
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เขียนใหม่ — ชื่อกรรมการใหม่, stream พื้นหลัง,
@@ -19,7 +20,7 @@
 // =====================================================
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SubmissionRow } from '@/lib/types';
 import {
   ANALYST_MESSAGES,
@@ -39,9 +40,17 @@ function seeded(i: number, salt = 1): number {
 
 type Props = {
   submissions: SubmissionRow[];
+  /** T11: จังหวะเสียง — 'judge' = กรรมการ 1 คนตัดสินครบ · 'all' = ครบทั้ง 3 คน พร้อมประกาศ */
+  onProgressCue?: (cue: 'judge' | 'all') => void;
 };
 
-export function PresenterJudgingScreen({ submissions }: Props) {
+// T11: แถบความคืบหน้า "วิ่งไล่" จาก 0 ไปหาค่าจริง ในเวลาคงที่ต่อกรรมการ (ms)
+// ไม่เคยแสดงเกินค่าจริง — ถ้ากรรมการยังตัดสินไม่ครบ แถบจะรอที่ค่าจริง
+// (กรรมการตัดสินแต่ละชิ้นเสร็จใน ~7 วิหลังส่ง → ตอนเข้าหน้านี้ส่วนใหญ่ครบแล้ว เดิมแถบเต็มทันที)
+const CATCHUP_MS = { analyst: 12000, communicator: 16000, creative: 20000 } as const;
+const easeOut = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 2.2);
+
+export function PresenterJudgingScreen({ submissions, onProgressCue }: Props) {
   const total = submissions.length;
 
   // นับรายกรรมการจาก scores ที่ลงมาแล้วจริง
@@ -57,8 +66,45 @@ export function PresenterJudgingScreen({ submissions }: Props) {
     return { analyst: a, creative: c, communicator: m };
   }, [submissions]);
 
-  const done = Math.min(counts.analyst, counts.creative, counts.communicator);
+  // เวลาที่ผ่านไปตั้งแต่เข้าหน้านี้ — ขับแถบวิ่งไล่
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const start = Date.now();
+    const id = setInterval(() => {
+      const e = Date.now() - start;
+      setElapsed(e);
+      if (e > CATCHUP_MS.creative + 500) clearInterval(id);
+    }, 80);
+    return () => clearInterval(id);
+  }, []);
+
+  const shownOf = (key: keyof typeof CATCHUP_MS, actual: number) =>
+    Math.min(actual, Math.floor(total * easeOut(elapsed / CATCHUP_MS[key])));
+  const shown = {
+    analyst: shownOf('analyst', counts.analyst),
+    creative: shownOf('creative', counts.creative),
+    communicator: shownOf('communicator', counts.communicator),
+  };
+  const complete = {
+    analyst: total > 0 && shown.analyst >= total,
+    creative: total > 0 && shown.creative >= total,
+    communicator: total > 0 && shown.communicator >= total,
+  };
+  const allComplete = complete.analyst && complete.creative && complete.communicator;
+
+  const done = Math.min(shown.analyst, shown.creative, shown.communicator);
   const donePct = total > 0 ? (done / total) * 100 : 0;
+
+  // จังหวะเสียง: กรรมการครบทีละคน แล้วครบทั้งหมด
+  const completeCount =
+    (complete.analyst ? 1 : 0) + (complete.creative ? 1 : 0) + (complete.communicator ? 1 : 0);
+  const prevCompleteRef = useRef(0);
+  useEffect(() => {
+    if (completeCount > prevCompleteRef.current) {
+      onProgressCue?.(completeCount >= 3 ? 'all' : 'judge');
+    }
+    prevCompleteRef.current = completeCount;
+  }, [completeCount, onProgressCue]);
 
   const aIdx = useRotatingIndex(ANALYST_MESSAGES.length, JUDGE_MSG_INTERVAL_MS);
   const cIdx = useRotatingIndex(CREATIVE_MESSAGES.length, JUDGE_MSG_INTERVAL_MS + 260);
@@ -96,15 +142,30 @@ export function PresenterJudgingScreen({ submissions }: Props) {
       </div>
 
       <div className="t7-stage">
-        <T7TopBar status="กำลังตัดสิน" variant="warn" dot />
+        <T7TopBar
+          status={allComplete ? 'ตัดสินครบแล้ว' : 'กำลังตัดสิน'}
+          variant="warn"
+          dot
+        />
 
         <div className="t7-j-headline">
-          <div className="t7-j-big">
-            <em>พี่ชัวร์</em>กำลังอ่านข้อความของทุกคน
-          </div>
-          <div className="t7-j-small">
-            กรรมการอีก 2 ท่านก็กำลังให้คะแนนอยู่เหมือนกัน
-          </div>
+          {allComplete ? (
+            <>
+              <div className="t7-j-big">
+                <em>ผลออกแล้ว</em> พร้อมประกาศ
+              </div>
+              <div className="t7-j-small">กรรมการทั้ง 3 ท่านตัดสินครบทุกข้อความ</div>
+            </>
+          ) : (
+            <>
+              <div className="t7-j-big">
+                <em>พี่ชัวร์</em>กำลังอ่านข้อความของทุกคน
+              </div>
+              <div className="t7-j-small">
+                กรรมการอีก 2 ท่านก็กำลังให้คะแนนอยู่เหมือนกัน
+              </div>
+            </>
+          )}
         </div>
 
         <div className="t7-judges">
@@ -114,7 +175,8 @@ export function PresenterJudgingScreen({ submissions }: Props) {
             name={PERSONA_LABELS.analyst}
             role={PERSONA_ROLES.analyst}
             message={ANALYST_MESSAGES[aIdx]}
-            count={counts.analyst}
+            count={shown.analyst}
+            complete={complete.analyst}
             total={total}
             bg="rgba(183,156,255,.16)"
           />
@@ -124,7 +186,8 @@ export function PresenterJudgingScreen({ submissions }: Props) {
             name={PERSONA_LABELS.creative}
             role={PERSONA_ROLES.creative}
             message={CREATIVE_MESSAGES[cIdx]}
-            count={counts.creative}
+            count={shown.creative}
+            complete={complete.creative}
             total={total}
             bg="rgba(245,197,24,.2)"
           />
@@ -134,7 +197,8 @@ export function PresenterJudgingScreen({ submissions }: Props) {
             name={PERSONA_LABELS.communicator}
             role={PERSONA_ROLES.communicator}
             message={COMMUNICATOR_MESSAGES[mIdx]}
-            count={counts.communicator}
+            count={shown.communicator}
+            complete={complete.communicator}
             total={total}
             bg="rgba(255,143,176,.16)"
           />
@@ -162,6 +226,7 @@ function JudgeTile({
   count,
   total,
   bg,
+  complete,
 }: {
   n: 1 | 2 | 3;
   emoji: string;
@@ -171,6 +236,7 @@ function JudgeTile({
   count: number;
   total: number;
   bg: string;
+  complete: boolean;
 }) {
   const pct = total > 0 ? (count / total) * 100 : 0;
   return (
@@ -181,7 +247,24 @@ function JudgeTile({
       <div className="t7-jname">{name}</div>
       <div className="t7-jrole">{role}</div>
       <div className="t7-jmsg">
-        <span key={message}>{message}</span>
+        {complete ? (
+          <span
+            key="complete"
+            style={{
+              display: 'inline-block',
+              padding: '4px 16px',
+              borderRadius: 999,
+              background: 'rgba(93,245,145,.16)',
+              border: '1.5px solid rgba(93,245,145,.7)',
+              color: '#5DF591',
+              fontWeight: 800,
+            }}
+          >
+            ✓ ตัดสินครบ
+          </span>
+        ) : (
+          <span key={message}>{message}</span>
+        )}
       </div>
       <div className="t7-jbar">
         <span style={{ width: `${pct}%` }} />

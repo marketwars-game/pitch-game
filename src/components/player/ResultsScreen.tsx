@@ -2,7 +2,7 @@
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T11-v1
+// VERSION: T11-v2
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
@@ -11,6 +11,7 @@
 //   คำนวณ rank โดย POLL submissions ทุก 5 วินาที (T5-v4: เปลี่ยนจาก realtime)
 //
 // CHANGE LOG:
+//   T11-v2 (2026-11-26): useRank หยุดดึงซ้ำเมื่อหน้าผลเต็มได้อันดับแล้ว 2 รอบ (เดิมดึง ~400 KB ทุก 5 วิไม่หยุด) · วิธีคำนวณอันดับไม่เปลี่ยน
 //   T11-v1 (2026-11-26): ปุ่ม "การ์ดผลของฉัน" + ShareCard (เต็มจอสำหรับแคปหน้าจอ) · รับ prop nickname
 //                        useRank / polling / การจัดอันดับ ไม่เปลี่ยน
 //   T9-v2 (2026-11-26): BU FinTech Workshop — ลายน้ำ DIME × BU / FINTECH & DIGITAL INVESTMENT + "ขอบคุณที่ร่วมคลาสวันนี้" (ข้อความล้วน)
@@ -76,7 +77,8 @@ interface ResultsScreenProps {
 }
 
 export function ResultsScreen({ gameId, variant, submission, nickname }: ResultsScreenProps) {
-  const { rank, total } = useRank(gameId, submission?.id ?? null);
+  // T11-v2: หน้าผลเต็ม (phase RESULTS) อันดับนิ่งแล้ว → หยุดดึงซ้ำเมื่อได้อันดับ
+  const { rank, total } = useRank(gameId, submission?.id ?? null, variant === 'full');
   const [showShare, setShowShare] = useState(false);
 
   if (variant === 'not-playing') {
@@ -539,7 +541,11 @@ function Sparkles() {
  *
  * Trade-off: rank update ช้าลง ~5 วิ (acceptable เพราะ RESULTS phase ไม่เร่ง)
  */
-function useRank(gameId: string, mySubmissionId: string | null) {
+// T11-v2: ดึงครั้งละ ~400 KB ที่ 180 ชิ้น — เดิมดึงทุก 5 วิไม่หยุด (load test: 428 MB ใน 30 วิ ทั้งห้อง)
+// stopWhenRanked = true → ได้อันดับครบ RANK_CONFIRM_ROUNDS รอบแล้วหยุด (รอบที่ 2 กันกรณีคะแนนชิ้นท้ายเพิ่งลง)
+const RANK_CONFIRM_ROUNDS = 2;
+
+function useRank(gameId: string, mySubmissionId: string | null, stopWhenRanked = false) {
   const [rank, setRank] = useState<number | null>(null);
   const [total, setTotal] = useState<number | null>(null);
 
@@ -552,6 +558,8 @@ function useRank(gameId: string, mySubmissionId: string | null) {
 
     const supabase = getSupabaseBrowserClient();
     let cancelled = false;
+    let rankedRounds = 0;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
 
     const compute = async () => {
       // T7: select submitted_at เพิ่ม — ใช้ตัดสินเสมอชั้นสุดท้าย
@@ -578,16 +586,24 @@ function useRank(gameId: string, mySubmissionId: string | null) {
       const myIndex = scored.findIndex((r) => r.id === mySubmissionId);
       setRank(myIndex >= 0 ? myIndex + 1 : null);
       setTotal(rows.length);
+
+      if (stopWhenRanked && myIndex >= 0) {
+        rankedRounds++;
+        if (rankedRounds >= RANK_CONFIRM_ROUNDS && intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      }
     };
 
     compute();
-    const intervalId = setInterval(compute, 5000);
+    intervalId = setInterval(compute, 5000);
 
     return () => {
       cancelled = true;
-      clearInterval(intervalId);
+      if (intervalId) clearInterval(intervalId);
     };
-  }, [gameId, mySubmissionId]);
+  }, [gameId, mySubmissionId, stopWhenRanked]);
 
   return { rank, total };
 }

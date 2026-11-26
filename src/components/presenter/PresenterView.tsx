@@ -2,7 +2,7 @@
 // FILE: src/components/presenter/PresenterView.tsx
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T11-v3
+// VERSION: T11-v4
 // CREATED: 2026-05-05 (T0-v2 placeholder)
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: Top-level Presenter component.
@@ -16,6 +16,7 @@
 //          space to begin" mental model.
 //
 // CHANGE LOG:
+//   T11-v4 (2026-11-26): ส่ง onProgressCue ให้ PresenterJudgingScreen (เสียงตอนกรรมการตัดสินครบ)
 //   T11-v3 (2026-11-26): ตัดเสียงรัวกลองตอนชื่อเด้ง (stopSfx) · step 4 ไม่มีเสียง · step 5 เสียงเปลี่ยนจังหวะ
 //   T11-v2 (2026-11-26): ส่ง onDrumroll ให้ PresenterResultsScreen (รัวกลองก่อนเปิดอันดับถัดไป)
 //   T11-v1 (2026-11-26): เสียงจอใหญ่ — usePresenterSound + PresenterSoundDirector · ปลดล็อกตอนปิด landing · ไม่แตะ phase routing
@@ -86,6 +87,12 @@ export function PresenterView() {
 
   const handleDrumroll = useCallback(() => playSfx('sfx_drumroll'), [playSfx]);
 
+  // T11-v4: เสียงตอนกรรมการตัดสินครบทีละคน / ครบทั้งหมด (หน้า JUDGING)
+  const handleJudgingCue = useCallback(
+    (cue: 'judge' | 'all') => playSfx(cue === 'all' ? 'sfx_reveal' : 'sfx_join'),
+    [playSfx]
+  );
+
   const soundDirector = (
     <PresenterSoundDirector
       sound={sound}
@@ -130,7 +137,7 @@ export function PresenterView() {
       );
       break;
     case 'JUDGING':
-      inner = <PresenterJudgingScreen submissions={submissions} />;
+      inner = <PresenterJudgingScreen submissions={submissions} onProgressCue={handleJudgingCue} />;
       break;
     case 'RESULTS':
       inner = (
