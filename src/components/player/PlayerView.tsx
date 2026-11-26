@@ -2,13 +2,14 @@
 // FILE: src/components/player/PlayerView.tsx
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// VERSION: T11-v1
 // CREATED: 2026-05-05
-// LAST MODIFIED: 2026-05-07
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: Player View main component — orchestrate hooks + route ไป screen ตาม phase
 //   Load global mesh-bg ทุก state เพื่อ visual consistency
 //
 // CHANGE LOG:
+//   T11-v1 (2026-11-26): ส่ง nickname ให้ ResultsScreen (ใช้บนการ์ดผลของฉัน) — ไม่แตะ phase logic
 //   T7-v1 (2026-08-04): JUDGING ไม่ห่อด้วย ScrollBody แล้ว (padding 16 ทำให้หน้าแชท
 //                       ไม่ full-bleed) + ส่ง pitch/caseName ให้ JudgingScreen
 //                       phase routing + hooks อื่นไม่เปลี่ยน
@@ -192,7 +193,12 @@ export function PlayerView() {
           <GlobalStyles />
           {/* ResultsScreen มี gradient bg ของตัวเอง — ข้าม MeshBg ตอนเป็น state full */}
           {submission ? (
-            <ResultsScreen gameId={gameId} variant="full" submission={submission} />
+            <ResultsScreen
+              gameId={gameId}
+              variant="full"
+              submission={submission}
+              nickname={player?.nickname ?? null}
+            />
           ) : (
             <>
               <MeshBg />

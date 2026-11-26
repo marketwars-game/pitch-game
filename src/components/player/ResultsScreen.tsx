@@ -2,7 +2,7 @@
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v2
+// VERSION: T11-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
@@ -11,6 +11,8 @@
 //   คำนวณ rank โดย POLL submissions ทุก 5 วินาที (T5-v4: เปลี่ยนจาก realtime)
 //
 // CHANGE LOG:
+//   T11-v1 (2026-11-26): ปุ่ม "การ์ดผลของฉัน" + ShareCard (เต็มจอสำหรับแคปหน้าจอ) · รับ prop nickname
+//                        useRank / polling / การจัดอันดับ ไม่เปลี่ยน
 //   T9-v2 (2026-11-26): BU FinTech Workshop — ลายน้ำ DIME × BU / FINTECH & DIGITAL INVESTMENT + "ขอบคุณที่ร่วมคลาสวันนี้" (ข้อความล้วน)
 //   T9-v1 (2026-09-20): brand + ชื่อกรรมการ + fallback reply (ตรงกับ FALLBACK_REPLY ใน route.ts T9-v1)
 //   T8-v2 (2026-08-21): fallback reply องก์ 1 → ตรงกับ FALLBACK_REPLY ใหม่ใน route.ts
@@ -63,15 +65,19 @@ import {
   MyBubble,
   KengChatStyles,
 } from './KengChat';
+import { ShareCard } from './ShareCard';
 
 interface ResultsScreenProps {
   gameId: string;
   variant: 'full' | 'not-playing';
   submission: SubmissionRow | null;
+  /** T11: ชื่อผู้เล่น — ใช้บนการ์ดผลของฉัน (ShareCard) */
+  nickname?: string | null;
 }
 
-export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProps) {
+export function ResultsScreen({ gameId, variant, submission, nickname }: ResultsScreenProps) {
   const { rank, total } = useRank(gameId, submission?.id ?? null);
+  const [showShare, setShowShare] = useState(false);
 
   if (variant === 'not-playing') {
     return (
@@ -300,6 +306,32 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
         {/* Spacer ถ้าไม่มี autoSubmitted badge — เพื่อ rhythm กับ judge cards */}
         {!isAutoSubmitted && <div style={{ height: 16 }} />}
 
+        {/* T11: ปุ่มเปิดการ์ดผลของฉัน (แคปหน้าจอเพื่อแชร์) — มีเฉพาะเมื่อมีคะแนนแล้ว */}
+        {finalScore !== null && (
+          <button
+            type="button"
+            onClick={() => setShowShare(true)}
+            style={{
+              display: 'block',
+              width: '100%',
+              margin: '0 0 16px',
+              padding: '12px 14px',
+              borderRadius: 12,
+              border: '1px solid rgba(93,245,145,0.55)',
+              background: 'rgba(93,245,145,0.12)',
+              color: '#5DF591',
+              fontSize: 14,
+              fontWeight: 800,
+              fontFamily: 'inherit',
+              cursor: 'pointer',
+              position: 'relative',
+              zIndex: 2,
+            }}
+          >
+            📸 การ์ดผลของฉัน — แคปไปแชร์ได้เลย
+          </button>
+        )}
+
         {/* Judge cards 3 ใบ */}
         <JudgeCard
           variant="analyst"
@@ -340,6 +372,18 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
           ดูอันดับทั้งหมดได้บนจอใหญ่
         </div>
       </div>
+
+      {showShare && (
+        <ShareCard
+          nickname={nickname ?? null}
+          finalScore={finalScore}
+          scores={scores}
+          rank={rank}
+          total={total}
+          reply={kengReply}
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </div>
   );
 }
