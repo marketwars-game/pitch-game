@@ -2,7 +2,7 @@
 // FILE: src/components/presenter/PresenterView.tsx
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T11-v1
+// VERSION: T11-v2
 // CREATED: 2026-05-05 (T0-v2 placeholder)
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: Top-level Presenter component.
@@ -16,6 +16,7 @@
 //          space to begin" mental model.
 //
 // CHANGE LOG:
+//   T11-v2 (2026-11-26): ส่ง onDrumroll ให้ PresenterResultsScreen (รัวกลองก่อนเปิดอันดับถัดไป)
 //   T11-v1 (2026-11-26): เสียงจอใหญ่ — usePresenterSound + PresenterSoundDirector · ปลดล็อกตอนปิด landing · ไม่แตะ phase routing
 //   T7-v1 (2026-08-04): ห่อทุก phase ด้วย <PresenterStage> (fit-to-screen)
 //                       + ส่ง submissions ให้ PresenterJudgingScreen
@@ -80,6 +81,8 @@ export function PresenterView() {
     [playBgm, playSfx]
   );
 
+  const handleDrumroll = useCallback(() => playSfx('sfx_drumroll'), [playSfx]);
+
   const soundDirector = (
     <PresenterSoundDirector
       sound={sound}
@@ -133,6 +136,7 @@ export function PresenterView() {
           players={players}
           submissions={submissions}
           onRevealStep={handleRevealStep}
+          onDrumroll={handleDrumroll}
         />
       );
       break;

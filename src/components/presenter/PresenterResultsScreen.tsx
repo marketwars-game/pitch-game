@@ -2,7 +2,7 @@
 // FILE: src/components/presenter/PresenterResultsScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T11-v1
+// VERSION: T11-v2
 // CREATED: 2026-05-07
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: จอผลรอบสุดท้าย — รับใช้องก์ 2-3 ของการเฉลย
@@ -13,6 +13,8 @@
 //          - อันดับ 4-10
 //
 // CHANGE LOG:
+//   T11-v2 (2026-11-26): podium เดินเอง — กด 1 ครั้ง เปิดอันดับ 3 → 2 → แชมป์ เว้น 3.6 วิ แล้วหยุดรอ · SPACE = ข้าม
+//                        ขั้น 4 (ข้อความแชมป์) และ 5 (อันดับ 4–10) ยังกดเอง · การจัดอันดับไม่เปลี่ยน
 //   T11-v1 (2026-11-26): prop onRevealStep (แจ้ง step ให้ผู้กำกับเสียง) — ลำดับ/ตรรกะการเปิดผลไม่เปลี่ยน
 //   T9-v2 (2026-09-20): 🔴 FIX — ข้อความแชมป์ยาวแล้วโดนตัดทั้งหัวและท้าย (font 24px ตายตัว +
 //                        justify-content:center + overflow:hidden) พบตอนเทส preview ด้วยข้อความ ~900 ตัวอักษร
@@ -90,6 +92,8 @@ type Props = {
   submissions: SubmissionRow[];
   /** T11: เรียกเมื่อเปิดผลถึง step ใหม่ (1–5) — ใช้สั่งเสียง */
   onRevealStep?: (step: number) => void;
+  /** T11: เรียกก่อนเปิดอันดับถัดไปช่วง podium เดินเอง — ใช้สั่งเสียงรัวกลอง */
+  onDrumroll?: () => void;
 };
 
 type Row = {
@@ -103,7 +107,19 @@ type Row = {
   reply?: string;
 };
 
-export function PresenterResultsScreen({ game, players, submissions, onRevealStep }: Props) {
+// T11: podium เดินเอง — กด 1 ครั้งที่ step 0 แล้วจอเปิดอันดับ 3 → 2 → แชมป์ เว้นช่วงละเท่านี้
+// แล้วหยุดรอที่แชมป์ (ข้อความแชมป์ / อันดับ 4–10 ยังกดเอง)
+const AUTO_PODIUM_GAP_MS = 3600;
+// เริ่มรัวกลองก่อนเปิดอันดับถัดไปเท่านี้
+const DRUMROLL_LEAD_MS = 2400;
+
+export function PresenterResultsScreen({
+  game,
+  players,
+  submissions,
+  onRevealStep,
+  onDrumroll,
+}: Props) {
   const nameOf = useMemo(() => {
     const map = new Map<string, string>();
     for (const p of players) map.set(p.id, p.nickname);
@@ -158,6 +174,24 @@ export function PresenterResultsScreen({ game, players, submissions, onRevealSte
     if (step > 0) onRevealStep?.(step);
   }, [step, onRevealStep]);
 
+  // T11: เดินเองช่วง podium — อยู่ที่อันดับ 3 หรือ 2 → ตั้งเวลาเปิดขั้นถัดไป
+  // กด SPACE ระหว่างนี้ = ข้ามไปขั้นถัดไปทันที (cleanup ล้าง timer เดิม แล้วตั้งใหม่จาก step ใหม่)
+  useEffect(() => {
+    if (step !== 1 && step !== 2) return;
+    const drum = setTimeout(
+      () => onDrumroll?.(),
+      AUTO_PODIUM_GAP_MS - DRUMROLL_LEAD_MS
+    );
+    const next = setTimeout(
+      () => setStep((s) => (s === step ? s + 1 : s)),
+      AUTO_PODIUM_GAP_MS
+    );
+    return () => {
+      clearTimeout(drum);
+      clearTimeout(next);
+    };
+  }, [step, onDrumroll]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowRight') {
@@ -186,11 +220,11 @@ export function PresenterResultsScreen({ game, players, submissions, onRevealSte
 
   const cue =
     step === 0
-      ? 'เปิดอันดับ 3'
+      ? 'เปิด Top 3'
       : step === 1
-        ? 'เปิดอันดับ 2'
+        ? 'ข้ามไปอันดับ 2'
         : step === 2
-          ? 'เปิดแชมป์'
+          ? 'ข้ามไปแชมป์'
           : step === 3
             ? 'เปิดข้อความของแชมป์'
             : step === 4
