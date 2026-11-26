@@ -2,9 +2,9 @@
 // FILE: src/components/player/WritingScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v1
+// VERSION: T9-v2
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-09-20
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: หน้าเขียน — หน้าจอแชทแบบ LINE
 //          - บับเบิลพี่มั่นเปิดเรื่อง + กล่องโจทย์ + บับเบิลเขียวของผู้เล่นแบบ live
 //          - แถบเครื่องมือ 7 ชิ้น หดเองตอนคีย์บอร์ดเด้ง (Q1 = ก)
@@ -16,6 +16,7 @@
 //          - submitting / submitError states
 //
 // CHANGE LOG:
+//   T9-v2 (2026-11-26): BU FinTech Workshop — ป้ายวันในแชท "วันนี้" (ตัด "ระหว่าง session") (ข้อความล้วน)
 //   T9-v1 (2026-09-20): ข้อความเวอร์ชันพี่ชัวร์ + ป้ายวัน "ระหว่าง session"
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เขียนใหม่เป็น LINE layout (เดิม: challenge box + StockCard)
@@ -133,7 +134,7 @@ export function WritingScreen({
       />
 
       <ChatSurface scrollRef={chatRef}>
-        <ChatDay label="วันนี้ · ระหว่าง session" />
+        <ChatDay label="วันนี้" />
 
         <KengIntro caseData={caseData} />
 

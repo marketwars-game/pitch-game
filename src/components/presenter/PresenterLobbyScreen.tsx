@@ -2,9 +2,9 @@
 // FILE: src/components/presenter/PresenterLobbyScreen.tsx
 // PROJECT: pitch-game
 // TASK: T7 — LINE หาพี่เก่ง (DIME x KTC)
-// VERSION: T7-v1
+// VERSION: T9-v1
 // CREATED: 2026-05-07
-// LAST MODIFIED: 2026-08-04
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: จอ LOBBY — QR + รายชื่อผู้เล่นทุกคน
 //          - แสดงชื่อ "ครบทุกคน" ไม่ตัดทิ้ง โดยย่อทั้งก้อนอัตโนมัติเมื่อเริ่มล้น
 //            (scale-to-fit ชั้นใน — วัด scrollHeight เทียบ clientHeight)
@@ -12,6 +12,7 @@
 //          - ไม่แสดงเพดานจำนวนคน (ไม่มี "/80")
 //
 // CHANGE LOG:
+//   T9-v1 (2026-11-26): BU FinTech Workshop — คำโปรยให้ตรงกับ landing/มือถือ + "รอวิทยากรกดเริ่ม" (ข้อความล้วน)
 //   T7-v1 (2026-08-04): เขียนใหม่ — layout ใหม่, ชื่อครบทุกคน, QR popup,
 //                       เลิกใช้ PILL_GRID_MAX (ไม่ตัดชื่อทิ้งแล้ว)
 //   T4-v1 (2026-05-07): Initial
@@ -95,7 +96,7 @@ export function PresenterLobbyScreen({ players, newPlayerIds }: Props) {
               LINE หา<span className="t7-hl">{DEFAULT_CASE.name}</span>
             </div>
             <div className="t7-lobby-sub">
-              {DEFAULT_CASE.name}อยากเริ่มลงทุน แต่ไม่กล้าสักที
+              {DEFAULT_CASE.name}กลัวเสี่ยง แต่อยากรู้เรื่องหุ้น SpaceX
             </div>
 
             <button
@@ -131,7 +132,7 @@ export function PresenterLobbyScreen({ players, newPlayerIds }: Props) {
             <div className="t7-counter">
               <span className="t7-cnum">{players.length}</span>
               <span className="t7-clabel">คนเข้ามาแล้ว</span>
-              <span className="t7-waitcue">รอ MC กดเริ่ม</span>
+              <span className="t7-waitcue">รอวิทยากรกดเริ่ม</span>
             </div>
 
             <div className="t7-namebox" ref={boxRef}>

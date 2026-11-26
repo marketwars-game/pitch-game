@@ -2,9 +2,9 @@
 // FILE: src/lib/presenter-config.ts
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v1
+// VERSION: T9-v2
 // CREATED: 2026-05-07
-// LAST MODIFIED: 2026-09-20
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: Static config สำหรับ Presenter View เท่านั้น —
 //          - URL bar text (LOBBY)
 //          - Judge persona rotating messages (JUDGING)
@@ -12,6 +12,7 @@
 //          - Pill grid limits
 //
 // CHANGE LOG:
+//   T9-v2 (2026-11-26): BU FinTech Workshop — BRAND_RIGHT 'BU' + SESSION_NAME 'FINTECH & DIGITAL INVESTMENT' (ค่าอื่นไม่เปลี่ยน)
 //   T9-v1 (2026-09-20): brand AXA + ข้อความกรรมการ/ข้อความลอยเวอร์ชันพี่ชัวร์
 //   T8-v1 (2026-08-20): แบรนด์ SCG + SESSION_NAME + ข้อความกรรมการ 3 ชุด + stream snippets เวอร์ชันพี่มั่น
 //   T7-v2 (2026-08-04): QR encode URL ตรง (ไม่ผ่าน bit.ly) เพื่อลดขั้นตอน
@@ -112,8 +113,8 @@ export const LANDING_DISMISS_KEYS = ['Space', 'Enter'] as const;
 // T9 — Brand lock-up (ตัวอักษรล้วน ไม่ใช้โลโก้ AXA)
 // =====================================================
 export const BRAND_LEFT = 'DIME';
-export const BRAND_RIGHT = 'AXA';
-export const SESSION_NAME = 'DATA & AI WEEK 2026';
+export const BRAND_RIGHT = 'BU';
+export const SESSION_NAME = 'FINTECH & DIGITAL INVESTMENT';
 
 // =====================================================
 // T7 — ข้อความลอยพื้นหลังตอน JUDGING

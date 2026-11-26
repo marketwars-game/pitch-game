@@ -2,15 +2,16 @@
 // FILE: src/components/player/LobbyScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v1
+// VERSION: T9-v2
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-09-20
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: Lobby screen — รองรับ 3 states จาก mockup-v5:
 //          State 1: empty (join form)
 //          State 2: joined (รอเกมเริ่ม)
 //          State 3: blocked (late join — phase ≠ LOBBY แต่ไม่มี player)
 //
 // CHANGE LOG:
+//   T9-v2 (2026-11-26): BU FinTech Workshop — brand DIME × BU / FINTECH & DIGITAL INVESTMENT + "MC" → "วิทยากร" (ข้อความล้วน ไม่แตะ logic)
 //   T9-v1 (2026-09-20): lobby เวอร์ชันพี่ชัวร์ / AXA
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น + แบรนด์ DIME × SCG (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เปลี่ยนชื่อเกม + แบรนด์เป็น DIME × KTC
@@ -130,7 +131,7 @@ export function LobbyScreen({
             รอเกมเริ่ม
           </div>
           <div style={{ fontSize: 13, color: '#A1A1AA', lineHeight: 1.55 }}>
-            อีกสักครู่ MC จะกดเริ่ม แล้วพี่ชัวร์จะทักมา
+            อีกสักครู่วิทยากรจะกดเริ่ม แล้วพี่ชัวร์จะทักมา
           </div>
         </div>
 
@@ -279,7 +280,7 @@ function HeroBlock() {
             marginBottom: 16,
           }}
         >
-          ◆ AXA DATA & AI WEEK 2026
+          ◆ FINTECH & DIGITAL INVESTMENT
         </span>
         <div
           style={{
@@ -404,9 +405,9 @@ function Watermark() {
           WebkitBackdropFilter: 'blur(6px)',
         }}
       >
-        <span style={{ color: '#5DF591' }}>DIME × AXA</span>
+        <span style={{ color: '#5DF591' }}>DIME × BU</span>
         <span style={{ color: '#71717A', fontWeight: 400 }}>·</span>
-        <span style={{ color: '#3B7DFF' }}>DATA & AI WEEK 2026</span>
+        <span style={{ color: '#3B7DFF' }}>FINTECH & DIGITAL INVESTMENT</span>
       </span>
     </div>
   );

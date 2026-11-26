@@ -2,15 +2,16 @@
 // FILE: src/components/player/ResultsScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v1
+// VERSION: T9-v2
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-09-20
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: Results screen — รองรับ 2 states จาก mockup-v5:
 //   State 8: full results (vibrant + watermark + sparkles + 3 judge cards + rank)
 //   State 9: not playing (faded "การแข่งขันสิ้นสุด")
 //   คำนวณ rank โดย POLL submissions ทุก 5 วินาที (T5-v4: เปลี่ยนจาก realtime)
 //
 // CHANGE LOG:
+//   T9-v2 (2026-11-26): BU FinTech Workshop — ลายน้ำ DIME × BU / FINTECH & DIGITAL INVESTMENT + "ขอบคุณที่ร่วมคลาสวันนี้" (ข้อความล้วน)
 //   T9-v1 (2026-09-20): brand + ชื่อกรรมการ + fallback reply (ตรงกับ FALLBACK_REPLY ใน route.ts T9-v1)
 //   T8-v2 (2026-08-21): fallback reply องก์ 1 → ตรงกับ FALLBACK_REPLY ใหม่ใน route.ts
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น + แบรนด์ DIME × SCG (ไม่แตะ logic)
@@ -113,7 +114,7 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
           การแข่งขันสิ้นสุด
         </div>
         <div style={{ fontSize: 13, color: '#A1A1AA', lineHeight: 1.55 }}>
-          ขอบคุณที่เข้าร่วมงาน
+          ขอบคุณที่ร่วมคลาสวันนี้
           <br />
           ดูผู้ชนะได้บนจอใหญ่
         </div>
@@ -162,9 +163,9 @@ export function ResultsScreen({ gameId, variant, submission }: ResultsScreenProp
             WebkitBackdropFilter: 'blur(6px)',
           }}
         >
-          <span style={{ color: '#5DF591' }}>DIME × AXA</span>
+          <span style={{ color: '#5DF591' }}>DIME × BU</span>
           <span style={{ color: '#71717A', fontWeight: 400 }}>·</span>
-          <span style={{ color: '#3B7DFF' }}>DATA & AI WEEK 2026</span>
+          <span style={{ color: '#3B7DFF' }}>FINTECH & DIGITAL INVESTMENT</span>
         </span>
       </div>
 

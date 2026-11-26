@@ -2,9 +2,9 @@
 // FILE: src/components/presenter/PresenterWritingScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v1
+// VERSION: T9-v2
 // CREATED: 2026-05-07
-// LAST MODIFIED: 2026-09-20
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: จอตอนผู้เล่นกำลังเขียน 5 นาที
 //          - ข้อความพี่มั่นเป็นบับเบิลแชทแบบเดียวกับที่ทุกคนเห็นในมือถือ
 //          - เครื่องมือ 7 ชิ้นเป็นแถบล่างเต็มความกว้าง (อ่านจากท้ายห้องได้)
@@ -12,6 +12,7 @@
 //          - โหมดเตือน 30 วิสุดท้าย เปลี่ยนโทนทั้งจอ ไม่ใช่แค่ตัวเลข
 //
 // CHANGE LOG:
+//   T9-v2 (2026-11-26): BU FinTech Workshop — "WHY จากคลาสวันนี้" (ข้อความล้วน)
 //   T9-v1 (2026-09-20): หัวโจทย์ "อธิบายหุ้น SpaceX ด้วย WHY" + บรรทัดข้อห้าม + แถบล่างเป็น WHY 3 ช่อง (t9-why) + avatar ช
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น — โจทย์จอใหญ่ + อวาตาร์ ม + อายุ 52 + หัวกล่องหลักผู้นำ (ไม่แตะ logic)
 //   T7-v1 (2026-08-04): เขียนใหม่ — เดิมเป็น "Pitch หุ้น X ให้ลูกฟัง" + countdown 200px
@@ -148,7 +149,7 @@ export function PresenterWritingScreen({ game, players, submissions }: Props) {
         {/* ---------- ล่าง: WHY 3 ช่อง (หน้าตาเดียวกับสไลด์ 53) ---------- */}
         <div className="t7-toolbar">
           <div className="t7-toolhead">
-            <span className="t7-toolhead-lbl">WHY จาก session วันนี้</span>
+            <span className="t7-toolhead-lbl">WHY จากคลาสวันนี้</span>
             <span className="t7-toolhead-rule">ตอบให้ครบทั้ง 3 ตัว</span>
           </div>
           <div className="t9-why">

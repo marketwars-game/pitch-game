@@ -2,14 +2,15 @@
 // FILE: src/components/presenter/PresenterLandingScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v1
+// VERSION: T9-v2
 // CREATED: 2026-05-07
-// LAST MODIFIED: 2026-09-20
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: จอ idle ก่อน MC กด SPACE — คนเดินเข้าห้องเห็นจอนี้ก่อนใคร
 //          ตัวเอกของหน้า: บับเบิลแชทที่พิมพ์ข้อความพี่มั่นวนไปเรื่อยๆ
 //          ทำให้คนเข้าใจโจทย์ตั้งแต่ยังไม่มีใครพูด
 //
 // CHANGE LOG:
+//   T9-v2 (2026-11-26): BU FinTech Workshop — "เกมปิดท้ายคลาสวันนี้" (ข้อความล้วน)
 //   T9-v1 (2026-09-20): landing เวอร์ชันพี่ชัวร์
 //   T8-v1 (2026-08-20): tagline เคสพี่มั่น — บับเบิล/ชื่อดึงจาก DEFAULT_CASE อยู่แล้ว
 //   T7-v1 (2026-08-04): เขียนใหม่ทั้งไฟล์ (เดิม: AI Stock Pitch Battle + โลโก้ Dime)
@@ -94,7 +95,7 @@ export function PresenterLandingScreen() {
         <T7TopBar status={SESSION_NAME} />
 
         <div className="t7-landing-center">
-          <div className="t7-eyebrow">เกมปิดท้าย session วันนี้</div>
+          <div className="t7-eyebrow">เกมปิดท้ายคลาสวันนี้</div>
 
           <h1 className="t7-landing-title">
             <span className="t7-word t7-word--1">LINE&nbsp;หา</span>

@@ -2,12 +2,13 @@
 // FILE: src/components/admin/AdminTopBar.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v1
+// VERSION: T9-v2
 // CREATED: 2026-05-06
-// LAST MODIFIED: 2026-09-20
+// LAST MODIFIED: 2026-11-26
 // PURPOSE: Top header bar — brand + event + round + phase status + logout
 //
 // CHANGE LOG:
+//   T9-v2 (2026-11-26): BU FinTech Workshop — brand line เวอร์ชัน BU FinTech Workshop
 //   T9-v1 (2026-09-20): brand line เวอร์ชัน AXA
 //   T8-v1 (2026-08-20): แบรนด์ DIME × SCG
 //   T7-v1 (2026-08-04): เปลี่ยนแบรนด์เป็น DIME × KTC · INVESTMENT MADE SIMPLE
@@ -71,7 +72,7 @@ export function AdminTopBar({ phase, roundNumber, onLogout }: AdminTopBarProps) 
               lineHeight: 1,
             }}
           >
-            DIME × AXA
+            DIME × BU
           </div>
           <div
             style={{
@@ -82,7 +83,7 @@ export function AdminTopBar({ phase, roundNumber, onLogout }: AdminTopBarProps) 
               lineHeight: 1,
             }}
           >
-            DATA & AI WEEK 2026
+            FINTECH & DIGITAL INVESTMENT
           </div>
         </div>
         <div
