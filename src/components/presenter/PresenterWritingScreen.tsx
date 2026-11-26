@@ -2,7 +2,7 @@
 // FILE: src/components/presenter/PresenterWritingScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v2
+// VERSION: T11-v1
 // CREATED: 2026-05-07
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: จอตอนผู้เล่นกำลังเขียน 5 นาที
@@ -12,6 +12,7 @@
 //          - โหมดเตือน 30 วิสุดท้าย เปลี่ยนโทนทั้งจอ ไม่ใช่แค่ตัวเลข
 //
 // CHANGE LOG:
+//   T11-v1 (2026-11-26): แถบล่าง WHY เหลือตัวอักษร W · H · Y อย่างเดียว (ตัดชื่อ + คำถามกำกับ) — คนที่ฟังช่วงสอนได้เปรียบ
 //   T9-v2 (2026-11-26): BU FinTech Workshop — "WHY จากคลาสวันนี้" (ข้อความล้วน)
 //   T9-v1 (2026-09-20): หัวโจทย์ "อธิบายหุ้น SpaceX ด้วย WHY" + บรรทัดข้อห้าม + แถบล่างเป็น WHY 3 ช่อง (t9-why) + avatar ช
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น — โจทย์จอใหญ่ + อวาตาร์ ม + อายุ 52 + หัวกล่องหลักผู้นำ (ไม่แตะ logic)
@@ -30,12 +31,6 @@ import {
 import { useCountdown } from '@/hooks/useCountdown';
 import { TOOLBOX } from '@/lib/stock-data';
 
-// T9: คำถามใต้ตัวอักษร — คำเดียวกับสไลด์ 53 ของ deck
-const WHY_QUESTIONS: Record<string, string> = {
-  what: 'บริษัททำอะไร?',
-  how: 'ทำไมน่าลงทุน?',
-  yet: 'แต่… ความเสี่ยงคือ?',
-};
 import { T7Ambient, T7TopBar } from './PresenterChrome';
 
 const RING_R = 100;
@@ -146,7 +141,7 @@ export function PresenterWritingScreen({ game, players, submissions }: Props) {
           </div>
         </div>
 
-        {/* ---------- ล่าง: WHY 3 ช่อง (หน้าตาเดียวกับสไลด์ 53) ---------- */}
+        {/* ---------- ล่าง: WHY 3 ช่อง — T11: เหลือตัวอักษรอย่างเดียว ไม่มีชื่อ/คำถามกำกับ ---------- */}
         <div className="t7-toolbar">
           <div className="t7-toolhead">
             <span className="t7-toolhead-lbl">WHY จากคลาสวันนี้</span>
@@ -154,19 +149,18 @@ export function PresenterWritingScreen({ game, players, submissions }: Props) {
           </div>
           <div className="t9-why">
             {TOOLBOX.map((t, i) => {
-              // name = 'W · What' → ตัวใหญ่ 'W' + ชื่อ 'What'
-              const [letter, title] = t.name.split(' · ');
+              // name = 'W · What' → ใช้เฉพาะตัวใหญ่ 'W'
+              const [letter] = t.name.split(' · ');
               return (
                 <div
                   key={t.id}
                   className={`t9-whycard${t.id === 'yet' ? ' t9-whycard--yet' : ''}`}
-                  style={{ animationDelay: `${0.6 + i * 0.12}s` }}
+                  style={{
+                    animationDelay: `${0.6 + i * 0.12}s`,
+                    justifyContent: 'center',
+                  }}
                 >
                   <div className="t9-why-letter">{letter}</div>
-                  <div>
-                    <div className="t9-why-title">{title ?? t.name}</div>
-                    <div className="t9-why-q">{WHY_QUESTIONS[t.id] ?? ''}</div>
-                  </div>
                 </div>
               );
             })}

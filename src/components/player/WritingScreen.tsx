@@ -2,12 +2,12 @@
 // FILE: src/components/player/WritingScreen.tsx
 // PROJECT: pitch-game
 // TASK: T9 — LINE หาพี่ชัวร์ (DIME x AXA Data & AI Week 2026)
-// VERSION: T9-v2
+// VERSION: T11-v1
 // CREATED: 2026-05-06
 // LAST MODIFIED: 2026-11-26
 // PURPOSE: หน้าเขียน — หน้าจอแชทแบบ LINE
 //          - บับเบิลพี่มั่นเปิดเรื่อง + กล่องโจทย์ + บับเบิลเขียวของผู้เล่นแบบ live
-//          - แถบเครื่องมือ 7 ชิ้น หดเองตอนคีย์บอร์ดเด้ง (Q1 = ก)
+//          - (T11) ไม่มีแถบเครื่องมือ — ผู้เล่นใช้ WHY จากที่ฟังในคลาส
 //          - หลังส่งแล้ว ข้อความค้างไว้ให้อ่านทวน ช่องพิมพ์ปิด
 //
 // ตรรกะที่คงไว้ 100% จาก T1-v1 (ห้ามแตะ):
@@ -16,6 +16,8 @@
 //          - submitting / submitError states
 //
 // CHANGE LOG:
+//   T11-v1 (2026-11-26): เอาแถบตัวช่วย WHY (ToolChips) + ปุ่ม 🧰 ออกจากหน้าเขียน — เหลือแชทล้วนแบบ LINE
+//                        ToolTray.tsx ยังอยู่ในรีโปแต่ไม่ถูกเรียก · auto-submit / min-max / submit ไม่เปลี่ยน
 //   T9-v2 (2026-11-26): BU FinTech Workshop — ป้ายวันในแชท "วันนี้" (ตัด "ระหว่าง session") (ข้อความล้วน)
 //   T9-v1 (2026-09-20): ข้อความเวอร์ชันพี่ชัวร์ + ป้ายวัน "ระหว่าง session"
 //   T8-v1 (2026-08-20): strings เคสพี่มั่น (ไม่แตะ logic)
@@ -44,7 +46,6 @@ import {
   CHAT_BORDER,
   CHAT_SEND,
 } from './KengChat';
-import { ToolChips, ToolButton } from './ToolTray';
 
 interface WritingScreenProps {
   game: GameRow;
@@ -67,7 +68,6 @@ export function WritingScreen({
 }: WritingScreenProps) {
   const [pitch, setPitch] = useState('');
   const [typing, setTyping] = useState(false); // โฟกัสช่องพิมพ์ = คีย์บอร์ดเด้ง
-  const [trayOpen, setTrayOpen] = useState(false); // กด 🧰 กางกลับระหว่างพิมพ์
 
   const config = game.config ?? DEFAULT_GAME_CONFIG;
   const minLen = config.pitchMinLength;
@@ -110,9 +110,6 @@ export function WritingScreen({
     onSubmit(trimmed);
   };
 
-  // แถบชิปโชว์เมื่อ: ยังไม่ส่ง และ (ยังไม่พิมพ์ หรือกด 🧰 เปิดไว้)
-  const showChips = !isSubmitted && (!typing || trayOpen);
-
   return (
     <div
       style={{
@@ -152,7 +149,7 @@ export function WritingScreen({
         )}
       </ChatSurface>
 
-      {/* ---------- แถบล่าง: เครื่องมือ + ช่องพิมพ์ ---------- */}
+      {/* ---------- แถบล่าง: ช่องพิมพ์ (T11: ไม่มีแถบตัวช่วย WHY แล้ว) ---------- */}
       <div
         style={{
           background: CHAT_CHROME,
@@ -162,8 +159,6 @@ export function WritingScreen({
           boxSizing: 'border-box',
         }}
       >
-        {showChips && <ToolChips />}
-
         {submitError && (
           <div
             style={{
@@ -191,20 +186,10 @@ export function WritingScreen({
             pointerEvents: isSubmitted ? 'none' : 'auto',
           }}
         >
-          <ToolButton
-            active={trayOpen && typing}
-            showDot={!showChips}
-            disabled={isSubmitted}
-            onClick={() => setTrayOpen((v) => !v)}
-          />
-
           <textarea
             value={pitch}
             onChange={(e) => handleChange(e.target.value)}
-            onFocus={() => {
-              setTyping(true);
-              setTrayOpen(false);
-            }}
+            onFocus={() => setTyping(true)}
             onBlur={() => setTyping(false)}
             disabled={submitting || isSubmitted}
             placeholder={
